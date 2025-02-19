@@ -1,1 +1,1 @@
-See full PMM changelog [here](https://www.percona.com/doc/percona-monitoring-and-management/release-notes/index.html).
+See full SSM changelog [here](https://shatteredsilicon.net/software/ssm/documentation/latest/release-notes/index.html).
