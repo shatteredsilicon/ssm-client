@@ -268,7 +268,7 @@ func (a *Admin) CheckNetwork(ntpHost string) error {
 		url := fmt.Sprintf("%s://%s/prometheus/targets", scheme, a.Config.ServerAddress)
 		fmt.Printf(`
 When an endpoint is down it may indicate that the corresponding service is stopped (run 'ssm-admin list' to verify).
-If it's running, check out the logs /var/log/ssm-*.log
+If it's running, check ssm related messages in syslog or /var/log/ssm-*.log.
 
 When all endpoints are down but 'ssm-admin list' shows they are up and no errors in the logs,
 check the firewall settings whether this system allows incoming connections from server to address:port in question.
