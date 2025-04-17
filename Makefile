@@ -49,15 +49,9 @@ $(SRPM_FILE): $(TARBALL_FILE)
 .PHONY: rpm
 rpm: $(RPM_FILE)
 
-ifeq ($(ARCH), x86_64)
-MOCK_CONFIG	:= centos-7
-else
-MOCK_CONFIG := ssm-9
-endif
-
 $(RPM_FILE): $(SRPM_FILE)
 	mkdir -vp $(BUILDDIR)/mock $(shell dirname $(RPM_FILE))
-	mock -r $(MOCK_CONFIG)-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
+	mock -r ssm-7-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
 	mv $(BUILDDIR)/mock/$(shell basename $(RPM_FILE)) $(RPM_FILE)
 
 .PHONY: sdeb
