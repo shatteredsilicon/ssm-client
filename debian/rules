@@ -17,8 +17,8 @@ PACKAGE_ROOT=$(CURDIR)/debian/ssm-client
 
 export GOPATH=$(CURDIR)/go
 export GO111MODULE=off
-export GOROOT=/usr/lib/go-1.22
-export PATH:=/usr/lib/go-1.22/bin:$(PATH)
+export GOROOT=/usr/lib/go-1.24
+export PATH:=/usr/lib/go-1.24/bin:$(PATH)
 
 override_dh_auto_build:
 	mkdir -p $(GOPATH)/src/github.com/prometheus
