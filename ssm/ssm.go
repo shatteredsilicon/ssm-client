@@ -215,11 +215,11 @@ const (
 )
 
 type ServerInfo struct {
-	ServerAddress     string
-	ServerSecurity    string
-	ClientName        string
-	ClientAddress     string
-	ClientBindAddress string
+	ServerAddress     string `json:"server_address"`
+	ServerSecurity    string `json:"server_security"`
+	ClientName        string `json:"client_name"`
+	ClientAddress     string `json:"client_address"`
+	ClientBindAddress string `json:"client_bind_address"`
 }
 
 // ServerInfo print server info.
