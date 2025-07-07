@@ -28,26 +28,26 @@ import (
 )
 
 type ExternalLabelPair struct {
-	Name  string
-	Value string
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type ExternalTarget struct {
-	Target string
-	Labels []ExternalLabelPair
-	Health string
+	Target string              `json:"target"`
+	Labels []ExternalLabelPair `json:"labels"`
+	Health string              `json:"health"`
 }
 
 // ExternalMetrics represents external Prometheus exporter configuration: job and targets.
 // Field names are used for JSON output, so do not rename them.
 // JSON output uses Prometheus and pmm-managed API terms; TUI uses terms aligned with other commands.
 type ExternalMetrics struct {
-	JobName        string
-	ScrapeInterval time.Duration // nanoseconds in JSON
-	ScrapeTimeout  time.Duration // nanoseconds in JSON
-	MetricsPath    string
-	Scheme         string
-	Targets        []ExternalTarget
+	JobName        string           `json:"job_name"`
+	ScrapeInterval time.Duration    `json:"scrape_interval"` // nanoseconds in JSON
+	ScrapeTimeout  time.Duration    `json:"scrape_timeout"`  // nanoseconds in JSON
+	MetricsPath    string           `json:"metrics_path"`
+	Scheme         string           `json:"scheme"`
+	Targets        []ExternalTarget `json:"targets"`
 }
 
 // ListExternalMetrics returns external Prometheus exporters.

@@ -20,6 +20,7 @@ package ssm
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -33,14 +34,14 @@ import (
 
 // Service status description.
 type ServiceStatus struct {
-	Type     string
-	Name     string
-	Port     string
-	Running  bool
-	DSN      string
-	Options  string
-	SSL      string
-	Password string
+	Type     string `json:"type"`
+	Name     string `json:"name"`
+	Port     string `json:"port"`
+	Running  bool   `json:"running"`
+	DSN      string `json:"dsn"`
+	Options  string `json:"options"`
+	SSL      string `json:"ssl"`
+	Password string `json:"password"`
 }
 
 // Sort rows of formatted table output (list, check-networks commands).
@@ -68,13 +69,13 @@ func (s sortOutput) Less(i, j int) bool {
 }
 
 type List struct {
-	Version string
+	Version string `json:"version"`
 	ServerInfo
-	Platform         string
-	Err              string
-	Services         []ServiceStatus
-	ExternalErr      string
-	ExternalServices []ExternalMetrics
+	Platform         string            `json:"platform"`
+	Err              string            `json:"error,omitempty"`
+	Services         []ServiceStatus   `json:"services"`
+	ExternalErr      string            `json:"external_error,omitempty"`
+	ExternalServices []ExternalMetrics `json:"external_services"`
 }
 
 // Table formats *List.Services as table and returns result as string.
@@ -147,6 +148,14 @@ func (l *List) ExternalTable() string {
 
 // Format formats *List with provided format template and returns result as string.
 func (l *List) Format(format string) string {
+	if format == "{{ json . }}" || format == "json" {
+		out, err := json.MarshalIndent(l, "", "  ")
+		if err != nil {
+			return fmt.Sprintf("JSON marshal error: %v", err)
+		}
+		return string(out)
+	}
+
 	b := &bytes.Buffer{}
 	w := tabwriter.NewWriter(b, 8, 8, 8, ' ', 0)
 
