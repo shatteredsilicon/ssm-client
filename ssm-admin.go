@@ -38,6 +38,7 @@ import (
 	mysqlQueries "github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql/queries"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql"
 	postgresqlMetrics "github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql/metrics"
+	postgresqlQueries "github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql/queries"
 	proxysqlMetrics "github.com/shatteredsilicon/ssm-client/ssm/plugin/proxysql/metrics"
 	"github.com/shatteredsilicon/ssm-client/ssm/utils"
 	"github.com/spf13/cobra"
@@ -463,6 +464,12 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 				os.Exit(1)
 			}
 
+			// Check --query-source flag.
+			if flagPostgreSQLQueries.QuerySource != "auto" && flagPostgreSQLQueries.QuerySource != "logfile" && flagPostgreSQLQueries.QuerySource != "table" {
+				fmt.Println("Flag --query-source can take the following values: auto, logfile, table.")
+				os.Exit(1)
+			}
+
 			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
 			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
@@ -483,6 +490,18 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 				os.Exit(1)
 			} else {
 				fmt.Println("[postgresql:metrics] OK, now monitoring PostgreSQL metrics using DSN", utils.SanitizeDSN(info.DSN))
+			}
+
+			pgQueries := postgresqlQueries.New(flagQueries, flagPostgreSQLQueries, flagPostgreSQL)
+			info, err = admin.AddQueries(ctx, pgQueries, nil)
+			if err == ssm.ErrDuplicate {
+				fmt.Println("[postgresql:queries] OK, already monitoring PostgreSQL queries.")
+			} else if err != nil {
+				fmt.Println("[postgresql:queries] Error adding PostgreSQL queries:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[postgresql:queries] OK, now monitoring PostgreSQL queries from", info.QuerySource,
+					"using DSN", utils.SanitizeDSN(info.DSN))
 			}
 		},
 	}
@@ -511,6 +530,43 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 				os.Exit(1)
 			}
 			fmt.Println("OK, now monitoring PostgreSQL metrics using DSN", utils.SanitizeDSN(info.DSN))
+		},
+	}
+	cmdAddPostgreSQLQueries = &cobra.Command{
+		Use:   "postgresql:queries [flags] [name]",
+		Short: "Add PostgreSQL instance to Query Analytics.",
+		Long: `This command adds the given PostgreSQL instance to Query Analytics.
+
+When adding a PostgreSQL instance, this tool tries to auto-detect the DSN and credentials.
+If you want to create a new user to be used for query collecting, provide --create-user option. ssm-admin will create
+a new user 'ssm' automatically using the given (auto-detected) PostgreSQL credentials for granting purpose.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+		`,
+		Example: `  ssm-admin add postgresql:queries
+  ssm-admin add postgresql:queries`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Agent does not accept additional arguments, we start it through qan-api.
+			if len(admin.Args) > 0 {
+				msg := `Command ssm-admin add postgresql:queries does not accept additional flags: %s.
+Type ssm-admin add postgresql:queries --help to see all acceptable flags.
+`
+				fmt.Printf(msg, strings.Join(admin.Args, ", "))
+				os.Exit(1)
+			}
+			// Check --query-source flag.
+			if flagPostgreSQLQueries.QuerySource != "auto" && flagPostgreSQLQueries.QuerySource != "logfile" && flagPostgreSQLQueries.QuerySource != "table" {
+				fmt.Println("Flag --query-source can take the following values: auto, logfile, table.")
+				os.Exit(1)
+			}
+			pgQueries := postgresqlQueries.New(flagQueries, flagPostgreSQLQueries, flagPostgreSQL)
+			info, err := admin.AddQueries(ctx, pgQueries, nil)
+			if err != nil {
+				fmt.Println("Error adding PostgreSQL queries:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, now monitoring PostgreSQL queries from", info.QuerySource,
+				"using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
 
@@ -1031,7 +1087,16 @@ An optional list of instances (scrape targets) can be provided.
 			} else if err != nil {
 				fmt.Printf("[postgresql:metrics] Error removing PostgreSQL metrics %s: %s\n", admin.ServiceName, err)
 			} else {
-				fmt.Printf("[postgresql:metrics] OK, removed MySQL PostgreSQL %s from monitoring.\n", admin.ServiceName)
+				fmt.Printf("[postgresql:metrics] OK, removed PostgreSQL %s from monitoring.\n", admin.ServiceName)
+			}
+
+			err = admin.RemoveQueries(plugin.NamePostgreSQL)
+			if err == ssm.ErrNoService {
+				fmt.Printf("[postgresql:queries] OK, no PostgreSQL queries %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[postgresql:queries] Error removing PostgreSQL queries %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[postgresql:queries] OK, removed PostgreSQL queries %s from monitoring.\n", admin.ServiceName)
 			}
 		},
 	}
@@ -1048,6 +1113,21 @@ An optional list of instances (scrape targets) can be provided.
 				os.Exit(1)
 			}
 			fmt.Printf("OK, removed PostgreSQL metrics %s from monitoring.\n", admin.ServiceName)
+		},
+	}
+	cmdRemovePostgreSQLQueries = &cobra.Command{
+		Use:   "postgresql:queries [flags] [name]",
+		Short: "Remove PostgreSQL instance from Query Analytics.",
+		Long: `This command removes PostgreSQL instance from Query Analytics.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveQueries(plugin.NamePostgreSQL); err != nil {
+				fmt.Printf("Error removing PostgreSQL queries %s: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed PostgreSQL queries %s from monitoring.\n", admin.ServiceName)
 		},
 	}
 	cmdRemoveProxySQLMetrics = &cobra.Command{
@@ -1544,13 +1624,14 @@ Usually, it runs automatically when ssm-client package is upgraded to upgrade lo
 	flagExtInterval, flagExtTimeout time.Duration
 	flagExtPath, flagExtScheme      string
 
-	flagMySQL        mysql.Flags
-	flagPostgreSQL   postgresql.Flags
-	flagQueries      plugin.QueriesFlags
-	flagMySQLMetrics mysqlMetrics.Flags
-	flagMySQLQueries mysqlQueries.Flags
-	flagC            ssm.Config
-	flagTimeout      time.Duration
+	flagMySQL             mysql.Flags
+	flagPostgreSQL        postgresql.Flags
+	flagQueries           plugin.QueriesFlags
+	flagMySQLMetrics      mysqlMetrics.Flags
+	flagMySQLQueries      mysqlQueries.Flags
+	flagPostgreSQLQueries postgresqlQueries.Flags
+	flagC                 ssm.Config
+	flagTimeout           time.Duration
 
 	flagNTPHost string
 )
@@ -1605,6 +1686,7 @@ func main() {
 		cmdRemoveMongoDBQueries,
 		cmdRemovePostgreSQL,
 		cmdRemovePostgreSQLMetrics,
+		cmdRemovePostgreSQLQueries,
 		cmdRemoveProxySQLMetrics,
 		cmdRemoveExternalService,
 		cmdRemoveExternalMetrics,
@@ -1683,16 +1765,23 @@ func main() {
 		cmd.Flags().StringVar(&flagPostgreSQL.Port, "port", "", "PostgreSQL port")
 		cmd.Flags().StringVar(&flagPostgreSQL.User, "user", "", "PostgreSQL username")
 		cmd.Flags().StringVar(&flagPostgreSQL.Password, "password", "", "PostgreSQL password")
+		cmd.Flags().StringVar(&flagPostgreSQL.Database, "database", "postgres", "PostgreSQL database")
 		cmd.Flags().StringVar(&flagPostgreSQL.SSLMode, "sslmode", "disable", "PostgreSQL SSL Mode: disable, require, verify-full or verify-ca")
 		cmd.Flags().BoolVar(&flagPostgreSQL.CreateUser, "create-user", false, "create a new PostgreSQL user")
 		cmd.Flags().StringVar(&flagPostgreSQL.CreateUserPassword, "create-user-password", "", "optional password for a new PostgreSQL user")
 		cmd.Flags().BoolVar(&flagPostgreSQL.Force, "force", false, "force to create/update PostgreSQL user")
 		cmd.Flags().BoolVar(&flagDisableSSL, "disable-ssl", false, "disable ssl mode on exporter")
 	}
+	// Common PostgreSQL Queries flags.
+	addCommonPostgreSQLQueriesFlags := func(cmd *cobra.Command) {
+		cmd.Flags().StringVar(&flagPostgreSQLQueries.QuerySource, "query-source", "auto", "source of SQL queries: auto, logfile, table")
+	}
 	// ssm-admin add postgresql
 	addCommonPostgreSQLFlags(cmdAddPostgreSQL)
 	// ssm-admin add postgresql:metrics
 	addCommonPostgreSQLFlags(cmdAddPostgreSQLMetrics)
+	// ssm-admin add postgresql:queries
+	addCommonPostgreSQLQueriesFlags(cmdAddPostgreSQLQueries)
 
 	// Common MongoDB flags.
 	addCommonMongoDBFlags := func(cmd *cobra.Command) {
