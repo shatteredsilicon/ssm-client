@@ -36,6 +36,7 @@ type DSN struct {
 	Password string
 	Host     string
 	Port     string
+	Database string
 	SSLMode  string
 }
 
@@ -72,7 +73,11 @@ func (d DSN) String() string {
 		buf.WriteString(d.Port)
 	}
 
-	buf.WriteString("/postgres")
+	// [database]
+	if len(d.Database) > 0 {
+		buf.WriteString("/" + d.Database)
+	}
+
 	buf.WriteString("?sslmode=")
 	if d.SSLMode == "" {
 		d.SSLMode = "disable"

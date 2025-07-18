@@ -58,7 +58,7 @@ go install -ldflags="-s -w" github.com/shatteredsilicon/mongodb_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/proxysql_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/mysqld_exporter
 pushd %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent
-    GO111MODULE=on go install -mod=vendor -buildvcs=false -ldflags="-s -w" ./bin/...
+    CGO_ENABLED=1 GO111MODULE=on go install -mod=vendor -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" ./bin/...
 popd
 GO111MODULE=on go install -mod=vendor -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" .
 

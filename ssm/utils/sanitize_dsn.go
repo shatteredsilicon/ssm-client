@@ -9,6 +9,7 @@ import (
 func SanitizeDSN(dsn string) string {
 	dsn = strings.TrimRight(strings.Split(dsn, "?")[0], "/")
 	dsn = strings.TrimPrefix(dsn, "mongodb://")
+	dsn = strings.TrimPrefix(dsn, "postgresql://")
 	if strings.Index(dsn, "@") > 0 {
 		dsnParts := strings.Split(dsn, "@")
 		userPart := dsnParts[0]
