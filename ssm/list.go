@@ -325,7 +325,7 @@ func (a *Admin) getSVCTable(node *consul.CatalogNode) []ServiceStatus {
 					switch key {
 					case "dsn":
 						dsn = string(kvp.Value)
-					case "qan_mysql_uuid", "qan_mongodb_uuid":
+					case "qan_mysql_uuid", "qan_mongodb_uuid", "qan_postgresql_uuid":
 						f := fmt.Sprintf("%s/config/qan-%s.conf", AgentBaseDir, kvp.Value)
 						config, err := getProtoQAN(f)
 						if err != nil {
