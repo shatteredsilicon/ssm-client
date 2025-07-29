@@ -293,11 +293,13 @@ func makeGrants(dsn DSN, userExists bool, schemaExists bool) []string {
 	}
 
 	grants = append(grants,
-		fmt.Sprintf("ALTER USER %s SET SEARCH_PATH TO %s,pg_catalog", quotedUser, quotedUser),
+		fmt.Sprintf("ALTER USER %s SET SEARCH_PATH TO %s,public,pg_catalog", quotedUser, quotedUser),
 		fmt.Sprintf("CREATE OR REPLACE VIEW %s.pg_stat_activity AS SELECT * from pg_catalog.pg_stat_activity", quotedUser),
 		fmt.Sprintf("GRANT SELECT ON %s.pg_stat_activity TO %s", quotedUser, quotedUser),
 		fmt.Sprintf("CREATE OR REPLACE VIEW %s.pg_stat_replication AS SELECT * from pg_catalog.pg_stat_replication", quotedUser),
 		fmt.Sprintf("GRANT SELECT ON %s.pg_stat_replication TO %s", quotedUser, quotedUser),
+		fmt.Sprintf("GRANT pg_read_all_settings TO %s", quotedUser),
+		fmt.Sprintf("GRANT pg_read_all_stats TO %s", quotedUser),
 	)
 	return grants
 }
