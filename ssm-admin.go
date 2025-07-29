@@ -1670,6 +1670,7 @@ func main() {
 		cmdAddMongoDBQueries,
 		cmdAddPostgreSQL,
 		cmdAddPostgreSQLMetrics,
+		cmdAddPostgreSQLQueries,
 		cmdAddProxySQL,
 		cmdAddProxySQLMetrics,
 		cmdAddExternalService,
@@ -1781,6 +1782,7 @@ func main() {
 	// ssm-admin add postgresql:metrics
 	addCommonPostgreSQLFlags(cmdAddPostgreSQLMetrics)
 	// ssm-admin add postgresql:queries
+	addCommonPostgreSQLFlags(cmdAddPostgreSQLQueries)
 	addCommonPostgreSQLQueriesFlags(cmdAddPostgreSQLQueries)
 
 	// Common MongoDB flags.
