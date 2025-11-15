@@ -219,5 +219,27 @@ func tableCount(ctx context.Context, dsn string) (int, error) {
 
 	tableCount := 0
 	err = db.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables").Scan(&tableCount)
-	return tableCount, err
+	if err != nil {
+		return 0, err
+	}
+
+	var tablespaceTableName string
+	err = db.QueryRowContext(ctx, "SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA = 'information_schema' AND (TABLE_NAME = 'INNODB_SYS_TABLESPACES' OR TABLE_NAME = 'INNODB_TABLESPACES')").Scan(&tablespaceTableName)
+	if err == sql.ErrNoRows {
+		return tableCount, nil
+	} else if err != nil {
+		return 0, err
+	}
+
+	tablespaceCount := 0
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM information_schema.%s", tablespaceTableName)).Scan(&tablespaceCount)
+	if err != nil {
+		return 0, err
+	}
+
+	if tableCount > tablespaceCount {
+		return tableCount, nil
+	} else {
+		return tablespaceCount, nil
+	}
 }
