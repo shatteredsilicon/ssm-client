@@ -419,7 +419,7 @@ func (a *Admin) renameClientNameInServices(node *consul.CatalogNode, oldName, ne
 			}
 
 			// Update qan instance
-			if strings.HasSuffix(oldKey, "/qan_mysql_uuid") {
+			if strings.HasSuffix(oldKey, fmt.Sprintf("/qan_%s_uuid", strings.Split(svc.ID, ":")[0])) {
 				instanceUUID := string(data.Value)
 				err := a.renameInstance(instanceUUID, oldName, newName)
 				if err != nil {
