@@ -36,6 +36,7 @@ import (
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql"
 	mysqlMetrics "github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql/metrics"
 	mysqlQueries "github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql/queries"
+	mysqlTuning "github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql/tuning"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql"
 	postgresqlMetrics "github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql/metrics"
 	postgresqlQueries "github.com/shatteredsilicon/ssm-client/ssm/plugin/postgresql/queries"
@@ -436,6 +437,31 @@ Type ssm-admin add mysql:queries --help to see all acceptable flags.
 			}
 			fmt.Println("OK, now monitoring MySQL queries from", info.QuerySource,
 				"using DSN", utils.SanitizeDSN(info.DSN))
+		},
+	}
+	cmdAddMySQLTuning = &cobra.Command{
+		Use:   "mysql:tuning [flags] [name]",
+		Short: "Add MySQL/MariaDB tuning service for instance.",
+		Long: `This command adds the MySQL/MariaDB tuning service for instance.
+
+When adding a MySQL instance, this tool tries to auto-detect the DSN and credentials.
+If you want to create a new user to be used for metrics collecting, provide --create-user option. ssm-admin will create
+a new user 'ssm@' automatically using the given (auto-detected) MySQL credentials for granting purpose.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+		`,
+		Example: `  ssm-admin add mysql:metrics --password abc123
+  ssm-admin add mysql:tuning --password abc123 --create-user
+  ssm-admin add mysql:tuning --password abc123 --port 3307 instance3307
+  ssm-admin add mysql:tuning --user rdsuser --password abc123 --host xxx.us-east-1.rds.amazonaws.com xxx`,
+		Run: func(cmd *cobra.Command, args []string) {
+			mysqlTuning := mysqlTuning.New(flagMySQLTuning, flagMySQL, ssm.SSMBaseDir)
+			info, err := admin.AddTuning(ctx, mysqlTuning)
+			if err != nil {
+				fmt.Println("Error adding MySQL tuning:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, now tuning MySQL using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
 
@@ -996,6 +1022,21 @@ An optional list of instances (scrape targets) can be provided.
 				os.Exit(1)
 			}
 			fmt.Printf("OK, removed MySQL queries %s from monitoring.\n", admin.ServiceName)
+		},
+	}
+	cmdRemoveMySQLTuning = &cobra.Command{
+		Use:   "mysql:tuning [flags] [name]",
+		Short: "Remove MySQL tuning service for instance.",
+		Long: `This command removes MySQL tuning service for instance.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveTuning(plugin.NameMySQL); err != nil {
+				fmt.Printf("Error removing MySQL tuning for %s: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed MySQL tuning for %s.\n", admin.ServiceName)
 		},
 	}
 	cmdRemoveMongoDB = &cobra.Command{
@@ -1629,6 +1670,7 @@ Usually, it runs automatically when ssm-client package is upgraded to upgrade lo
 	flagQueries           plugin.QueriesFlags
 	flagMySQLMetrics      mysqlMetrics.Flags
 	flagMySQLQueries      mysqlQueries.Flags
+	flagMySQLTuning       mysqlTuning.Flags
 	flagPostgreSQLQueries postgresqlQueries.Flags
 	flagC                 ssm.Config
 	flagTimeout           time.Duration
@@ -1665,6 +1707,7 @@ func main() {
 		cmdAddMySQL,
 		cmdAddMySQLMetrics,
 		cmdAddMySQLQueries,
+		cmdAddMySQLTuning,
 		cmdAddMongoDB,
 		cmdAddMongoDBMetrics,
 		cmdAddMongoDBQueries,
@@ -1682,6 +1725,7 @@ func main() {
 		cmdRemoveMySQL,
 		cmdRemoveMySQLMetrics,
 		cmdRemoveMySQLQueries,
+		cmdRemoveMySQLTuning,
 		cmdRemoveMongoDB,
 		cmdRemoveMongoDBMetrics,
 		cmdRemoveMongoDBQueries,
@@ -1749,6 +1793,8 @@ func main() {
 		cmd.Flags().IntVar(&flagMySQLQueries.RetainSlowLogs, "retain-slow-logs", 1, "number of slow logs to retain after rotation")
 		cmd.Flags().StringVar(&flagMySQLQueries.QuerySource, "query-source", "auto", "source of SQL queries: auto, slowlog, perfschema")
 	}
+	// Common MySQL Tuning flags.
+	addCommonMySQLTuningFlags := func(cmd *cobra.Command) {}
 	// ssm-admin add mysql
 	addCommonMySQLFlags(cmdAddMySQL)
 	addCommonMySQLMetricsFlags(cmdAddMySQL)
@@ -1759,6 +1805,9 @@ func main() {
 	// ssm-admin add mysql:queries
 	addCommonMySQLFlags(cmdAddMySQLQueries)
 	addCommonMySQLQueriesFlags(cmdAddMySQLQueries)
+	// ssm-admin add mysql:tuning
+	addCommonMySQLFlags(cmdAddMySQLTuning)
+	addCommonMySQLTuningFlags(cmdAddMySQLTuning)
 
 	// Common PostgreSQL flags.
 	addCommonPostgreSQLFlags := func(cmd *cobra.Command) {

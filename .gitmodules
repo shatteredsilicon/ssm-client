@@ -16,3 +16,6 @@
 [submodule "submodules/proxysql_exporter"]
 	path = submodules/proxysql_exporter
 	url = https://github.com/shatteredsilicon/proxysql_exporter
+[submodule "submodules/mt-agent"]
+	path = submodules/mt-agent
+	url = https://github.com/shatteredsilicon/mt-agent

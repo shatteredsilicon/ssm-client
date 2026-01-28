@@ -51,12 +51,14 @@ mv -fT submodules/mysqld_exporter %{_GOPATH}/src/github.com/shatteredsilicon/mys
 mv -fT submodules/mongodb_exporter %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter
 mv -fT submodules/postgres_exporter %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter
 mv -fT submodules/proxysql_exporter %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter
+mv -fT submodules/mt-agent %{_GOPATH}/src/github.com/shatteredsilicon/mt-agent
 
 go install -ldflags="-s -w" github.com/shatteredsilicon/node_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/postgres_exporter/cmd/postgres_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/mongodb_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/proxysql_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/mysqld_exporter
+go install -ldflags="-s -w -X 'main.DefaultTuningFile=/etc/my.cnf.d/conf.d/zz-ssm-tuning.cnf'" github.com/shatteredsilicon/mt-agent/cmd/mt-agent
 pushd %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent
     CGO_ENABLED=1 GO111MODULE=on go install -mod=vendor -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" ./bin/...
 popd
@@ -81,27 +83,14 @@ install -m 0755 %{_GOPATH}/bin/mongodb_exporter $RPM_BUILD_ROOT/opt/ss/ssm-clien
 install -m 0755 %{_GOPATH}/bin/proxysql_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0755 %{_GOPATH}/bin/ssm-qan-agent $RPM_BUILD_ROOT/opt/ss/qan-agent/bin/
 install -m 0755 %{_GOPATH}/bin/ssm-qan-agent-installer $RPM_BUILD_ROOT/opt/ss/qan-agent/bin/
+install -m 0755 %{_GOPATH}/bin/mt-agent $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/queries-mysqld.yml $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/example.prom $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/config/node_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/config/mysqld_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/config/mongodb_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/config/postgres_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/config/proxysql_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node,mysqld,mongodb,postgres,proxysql}_exporter/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,mt-agent}/support-files/config/*.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent}/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
+install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mt-agent/support-files/systemd/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
+install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent,mt-agent}/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent,mt-agent}/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -176,6 +165,7 @@ fi
 %systemd_post ssm-linux-metrics.service
 %systemd_post ssm-mysql-metrics.service
 %systemd_post ssm-mysql-queries.service
+%systemd_post ssm-mysql-tuning.service
 %systemd_post ssm-mongodb-metrics.service
 %systemd_post ssm-mongodb-queries.service
 %systemd_post ssm-postgresql-metrics.service
@@ -190,6 +180,7 @@ fi
 %systemd_preun ssm-linux-metrics.service
 %systemd_preun ssm-mysql-metrics.service
 %systemd_preun ssm-mysql-queries.service
+%systemd_preun ssm-mysql-tuning.service
 %systemd_preun ssm-mongodb-metrics.service
 %systemd_preun ssm-mongodb-queries.service
 %systemd_preun ssm-postgresql-metrics.service
@@ -202,12 +193,14 @@ if [ "$1" = "0" ]; then
     rm -rf /opt/ss/qan-agent
     rm -f /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.rpmsave
     rm -f /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.rpmsave
+    rm -f /etc/systemd/system/ssm-mysql-tuning.service.rpmsave
     echo "Uninstall complete."
 fi
 
 %systemd_postun ssm-linux-metrics.service
 %systemd_postun ssm-mysql-metrics.service
 %systemd_postun ssm-mysql-queries.service
+%systemd_postun ssm-mysql-tuning.service
 %systemd_postun ssm-mongodb-metrics.service
 %systemd_postun ssm-mongodb-queries.service
 %systemd_postun ssm-postgresql-metrics.service
