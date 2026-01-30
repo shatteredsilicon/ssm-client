@@ -36,6 +36,7 @@ const (
 	MySQLQueries      = "mysql:queries"
 	MongoDBQueries    = "mongodb:queries"
 	PostgreSQLQueries = "postgresql:queries"
+	MySQLTuning       = "mysql:tuning"
 )
 
 const (

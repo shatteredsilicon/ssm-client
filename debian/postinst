@@ -9,7 +9,7 @@ if [ -d "/run/systemd/system" ]; then
     done
 
     # backup ssm service files under /etc/systemd/system
-    for file in /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service /etc/systemd/system/ssm-{mysql,mongodb}-queries.service; do
+    for file in /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service /etc/systemd/system/ssm-{mysql,mongodb}-queries.service /etc/systemd/system/ssm-mysql-tuning.service; do
         if ! [ -f "$file" ]; then
             continue
         fi

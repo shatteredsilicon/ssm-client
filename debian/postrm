@@ -7,9 +7,11 @@ if [ "$1" = "remove" ]; then
     rm -f /lib/systemd/system/ssm-{mysql,mongodb}-queries.service
     rm -f /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.dpkg-old
     rm -f /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.dpkg-old
+    rm -f /etc/systemd/system/ssm-mysql-tuning.service.dpkg-old
     rm -f /etc/init.d/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics
     rm -f /etc/init.d/ssm-{mysql,mongodb}-queries
     rm -f /etc/init.d/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.conf
     rm -f /etc/init.d/ssm-{mysql,mongodb}-queries.conf
+    rm -f /etc/init.d/ssm-mysql-tuning.conf
     echo "Uninstall complete."
 fi
