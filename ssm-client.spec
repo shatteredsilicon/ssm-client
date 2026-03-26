@@ -52,6 +52,7 @@ mv -fT submodules/mongodb_exporter %{_GOPATH}/src/github.com/shatteredsilicon/mo
 mv -fT submodules/postgres_exporter %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter
 mv -fT submodules/proxysql_exporter %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter
 mv -fT submodules/mt-agent %{_GOPATH}/src/github.com/shatteredsilicon/mt-agent
+ln -s %{_builddir}/%{name} %{_GOPATH}/src/github.com/shatteredsilicon/ssm-client
 
 go install -ldflags="-s -w" github.com/shatteredsilicon/node_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/postgres_exporter/cmd/postgres_exporter
@@ -59,10 +60,8 @@ go install -ldflags="-s -w" github.com/shatteredsilicon/mongodb_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/proxysql_exporter
 go install -ldflags="-s -w" github.com/shatteredsilicon/mysqld_exporter
 go install -ldflags="-s -w -X 'main.DefaultTuningFile=/etc/my.cnf.d/conf.d/zz-ssm-tuning.cnf'" github.com/shatteredsilicon/mt-agent/cmd/mt-agent
-pushd %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent
-    CGO_ENABLED=1 GO111MODULE=on go install -mod=vendor -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" ./bin/...
-popd
-GO111MODULE=on go install -mod=vendor -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" .
+CGO_ENABLED=1 go install -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" github.com/shatteredsilicon/qan-agent/bin/...
+go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" github.com/shatteredsilicon/ssm-client
 
 strip %{_GOPATH}/bin/* || true
 

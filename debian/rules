@@ -34,19 +34,16 @@ override_dh_auto_build:
 		mv -fT submodules/postgres_exporter $(GOPATH)/src/github.com/shatteredsilicon/postgres_exporter && \
 		mv -fT submodules/proxysql_exporter $(GOPATH)/src/github.com/shatteredsilicon/proxysql_exporter && \
 		mv -fT submodules/mt-agent $(GOPATH)/src/github.com/shatteredsilicon/mt-agent
+	mv ssm-client $(GOPATH)/src/github.com/shatteredsilicon/ssm-client
 
-	cd $(GOPATH)/src/github.com/shatteredsilicon/postgres_exporter && \
-		go build -ldflags="-s -w" github.com/shatteredsilicon/postgres_exporter/cmd/postgres_exporter && \
-		mv postgres_exporter $(GOPATH)/bin
-
+	go install -ldflags="-s -w" github.com/shatteredsilicon/postgres_exporter/cmd/postgres_exporter
 	go install -ldflags="-s -w" github.com/shatteredsilicon/node_exporter
 	go install -ldflags="-s -w" github.com/shatteredsilicon/mongodb_exporter
 	go install -ldflags="-s -w" github.com/shatteredsilicon/proxysql_exporter
 	go install -ldflags="-s -w" github.com/shatteredsilicon/mysqld_exporter
 	go install -ldflags="-s -w -X 'main.DefaultTuningFile=/etc/mysql/conf.d/zz-ssm-tuning.cnf'" github.com/shatteredsilicon/mt-agent/cmd/mt-agent
-	cd $(GOPATH)/src/github.com/shatteredsilicon/qan-agent && \
-		GO111MODULE=on go install -mod=vendor -buildvcs=false -ldflags="-s -w" ./bin/...
-	cd ssm-client && GO111MODULE=on go install -mod=vendor -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{_version}-%{_release}'" .
+	go install -buildvcs=false -ldflags="-s -w" github.com/shatteredsilicon/qan-agent/bin/...
+	go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{_version}-%{_release}'" github.com/shatteredsilicon/ssm-client
 
 override_dh_auto_install:
 	@echo "RULES.$@"

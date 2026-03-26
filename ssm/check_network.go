@@ -51,7 +51,7 @@ func (a *Admin) CheckNetwork(ntpHost string) error {
 
 	// Check Prometheus API by retrieving all "up" time series.
 	promStatus := true
-	promData, err := a.promQueryAPI.Query(context.Background(), "up", time.Now())
+	promData, _, err := a.promQueryAPI.Query(context.Background(), "up", time.Now())
 	if err != nil {
 		promStatus = false
 	}

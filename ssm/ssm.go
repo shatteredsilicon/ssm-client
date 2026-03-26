@@ -46,7 +46,8 @@ import (
 	"github.com/fatih/color"
 	consul "github.com/hashicorp/consul/api"
 	service "github.com/percona/kardianos-service"
-	"github.com/prometheus/client_golang/api/prometheus"
+	prometheus "github.com/prometheus/client_golang/api"
+	prometheusV1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/shatteredsilicon/ssm/version"
 
 	"github.com/shatteredsilicon/ssm-client/ssm/managed"
@@ -68,7 +69,7 @@ type Admin struct {
 	apiTimeout   time.Duration
 	qanAPI       *API
 	consulAPI    *consul.Client
-	promQueryAPI prometheus.QueryAPI
+	promQueryAPI prometheusV1.API
 	managedAPI   *managed.Client
 	//promSeriesAPI prometheus.SeriesAPI
 }
@@ -117,15 +118,10 @@ func (a *Admin) SetAPI() error {
 	a.serverURL = fmt.Sprintf("%s://%s%s", scheme, authStr, a.Config.ServerAddress)
 
 	// Prometheus API.
-	cfg := prometheus.Config{Address: fmt.Sprintf("%s/prometheus", a.serverURL)}
-	// cfg.Transport = httpClient.Transport
-	// above should be used instead below but
-	// https://github.com/prometheus/client_golang/issues/292
-	if a.Config.ServerInsecureSSL {
-		cfg.Transport = insecureTransport
-	}
-	client, _ := prometheus.New(cfg)
-	a.promQueryAPI = prometheus.NewQueryAPI(client)
+	cfg := prometheus.Config{Address: fmt.Sprintf("%s/prometheus", a.serverURL), Client: a.qanAPI.NewClient()}
+
+	prometheusClient, _ := prometheus.NewClient(cfg)
+	a.promQueryAPI = prometheusV1.NewAPI(prometheusClient)
 	//a.promSeriesAPI = prometheus.NewSeriesAPI(client)
 
 	// Check if server is alive.
