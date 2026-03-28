@@ -22,12 +22,12 @@ DEB_FILES		:= $(BUILDDIR)/results/DEBS/ssm-client_$(VERSION)-$(RELEASE)_$(ARCH).
 $(TARBALL_FILE):
 	mkdir -vp $(shell dirname $(TARBALL_FILE))
 
-	GO111MODULE=on go mod vendor
+	GOTOOLCHAIN=auto GO111MODULE=on go mod vendor
 	git submodule update --init --force
 
 	for submodule_dir in $(shell find $(CURDIR)/submodules -maxdepth 1 -mindepth 1 -type d); do \
 		cd $${submodule_dir}; \
-			GO111MODULE=on go mod vendor || exit 1; \
+			GOTOOLCHAIN=auto GO111MODULE=on go mod vendor || exit 1; \
 	done; \
 
 	tar --exclude-vcs -czf $(TARBALL_FILE) -C $(shell dirname $(CURDIR)) --transform s/^$(shell basename $(CURDIR))/ssm-client/ $(shell basename $(CURDIR))
