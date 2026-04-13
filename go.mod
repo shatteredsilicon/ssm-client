@@ -1,6 +1,6 @@
 module github.com/shatteredsilicon/ssm-client
 
-go 1.25.8
+go 1.25.9
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
