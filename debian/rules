@@ -48,7 +48,6 @@ override_dh_auto_build:
 override_dh_auto_install:
 	@echo "RULES.$@"
 	install -d $(TMP)/rsyslog.d
-	install -d $(TMP)/logrotate.d
 	install -d $(TMP)/init.d
 	install -d $(TMP)/init
 	install -d $(TMP)/config
@@ -85,13 +84,6 @@ override_dh_auto_install:
 	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/proxysql_exporter/support-files/rsyslog.d/* $(TMP)/rsyslog.d/
 	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/qan-agent/support-files/rsyslog.d/* $(TMP)/rsyslog.d/
 	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/mt-agent/support-files/rsyslog.d/* $(TMP)/rsyslog.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/node_exporter/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/mysqld_exporter/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/mongodb_exporter/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/postgres_exporter/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/proxysql_exporter/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/qan-agent/support-files/logrotate.d/* $(TMP)/logrotate.d/
-	install -m 0644 $(GOPATH)/src/github.com/shatteredsilicon/mt-agent/support-files/logrotate.d/* $(TMP)/logrotate.d/
 	install -m 0755 $(GOPATH)/src/github.com/shatteredsilicon/node_exporter/support-files/init.d/* $(TMP)/init.d/
 	install -m 0755 $(GOPATH)/src/github.com/shatteredsilicon/mysqld_exporter/support-files/init.d/* $(TMP)/init.d/
 	install -m 0755 $(GOPATH)/src/github.com/shatteredsilicon/mongodb_exporter/support-files/init.d/* $(TMP)/init.d/

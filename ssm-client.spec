@@ -74,7 +74,6 @@ install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/qan-agent/bin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector
 install -m 0755 -d $RPM_BUILD_ROOT/lib/systemd/system
 install -m 0755 -d $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0755 -d $RPM_BUILD_ROOT/etc/logrotate.d/
 install -m 0755 %{_GOPATH}/bin/node_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0755 %{_GOPATH}/bin/mysqld_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0755 %{_GOPATH}/bin/postgres_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
@@ -89,7 +88,6 @@ install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent}/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mt-agent/support-files/systemd/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent,mt-agent}/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent,mt-agent}/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -217,4 +215,3 @@ fi
 /usr/sbin/ssm-admin
 /usr/sbin/pmm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf
-%config(noreplace) /etc/logrotate.d/ssm-*

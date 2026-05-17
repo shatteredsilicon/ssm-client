@@ -15,4 +15,3 @@ config/* /opt/ss/ssm-client/config/
 init.d/* /opt/ss/ssm-client/init.d/
 init/* /opt/ss/ssm-client/init/
 rsyslog.d/* /etc/rsyslog.d/
-logrotate.d/* /etc/logrotate.d/
