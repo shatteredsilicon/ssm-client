@@ -747,6 +747,7 @@ func (a *Admin) Uninstall() (count uint16, clientErr, serverErr error) {
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "data"))
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "instance"))
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "trash"))
+	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "cache"))
 
 	err := a.removeConfig()
 	if err != nil {

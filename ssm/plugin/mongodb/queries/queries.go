@@ -53,6 +53,7 @@ func (q Queries) InstanceTypeName() string {
 func (q Queries) Config() pc.QAN {
 	exampleQueries := !q.queriesFlags.DisableQueryExamples
 	return pc.QAN{
-		ExampleQueries: &exampleQueries,
+		ExampleQueries:   &exampleQueries,
+		PrefetchMetadata: &q.queriesFlags.PrefetchMetadata,
 	}
 }
