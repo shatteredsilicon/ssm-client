@@ -38,28 +38,17 @@ as possible.
 mkdir -p %{_GOPATH}
 
 export GOPATH=%{_GOPATH}
-export GO111MODULE=off
 export CGO_ENABLED=0
 
-%{__mkdir_p} %{_GOPATH}/src/github.com/prometheus
-%{__mkdir_p} %{_GOPATH}/src/github.com/shatteredsilicon
 %{__mkdir_p} %{_GOPATH}/bin
 
-mv -fT submodules/qan-agent %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent
-mv -fT submodules/node_exporter %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter
-mv -fT submodules/mysqld_exporter %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter
-mv -fT submodules/mongodb_exporter %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter
-mv -fT submodules/postgres_exporter %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter
-mv -fT submodules/proxysql_exporter %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter
-ln -s %{_builddir}/%{name} %{_GOPATH}/src/github.com/shatteredsilicon/ssm-client
-
-go install -ldflags="-s -w" github.com/shatteredsilicon/node_exporter
-go install -ldflags="-s -w" github.com/shatteredsilicon/postgres_exporter/cmd/postgres_exporter
-go install -ldflags="-s -w" github.com/shatteredsilicon/mongodb_exporter
-go install -ldflags="-s -w" github.com/shatteredsilicon/proxysql_exporter
-go install -ldflags="-s -w" github.com/shatteredsilicon/mysqld_exporter
-CGO_ENABLED=1 go install -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" github.com/shatteredsilicon/qan-agent/bin/...
-go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" github.com/shatteredsilicon/ssm-client
+pushd submodules/node_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
+pushd submodules/postgres_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" ./cmd/postgres_exporter && popd
+pushd submodules/proxysql_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
+pushd submodules/mongodb_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
+pushd submodules/mysqld_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
+pushd submodules/qan-agent && GOTOOLCHAIN=local CGO_ENABLED=1 go install -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" ./bin/... && popd
+GOTOOLCHAIN=local go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" .
 
 strip %{_GOPATH}/bin/* || true
 
@@ -80,27 +69,27 @@ install -m 0755 %{_GOPATH}/bin/mongodb_exporter $RPM_BUILD_ROOT/opt/ss/ssm-clien
 install -m 0755 %{_GOPATH}/bin/proxysql_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0755 %{_GOPATH}/bin/ssm-qan-agent $RPM_BUILD_ROOT/opt/ss/qan-agent/bin/
 install -m 0755 %{_GOPATH}/bin/ssm-qan-agent-installer $RPM_BUILD_ROOT/opt/ss/qan-agent/bin/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/queries-mysqld.yml $RPM_BUILD_ROOT/opt/ss/ssm-client
-install -m 0755 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/example.prom $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/config/node_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/config/mysqld_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/config/mongodb_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/config/postgres_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/config/proxysql_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node,mysqld,mongodb,postgres,proxysql}_exporter/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mongodb_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/postgres_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/proxysql_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
-install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/qan-agent/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/mysqld_exporter/queries-mysqld.yml $RPM_BUILD_ROOT/opt/ss/ssm-client
+install -m 0755 submodules/node_exporter/example.prom $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector/
+install -m 0600 submodules/node_exporter/support-files/config/node_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0600 submodules/mysqld_exporter/support-files/config/mysqld_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0600 submodules/mongodb_exporter/support-files/config/mongodb_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0600 submodules/postgres_exporter/support-files/config/postgres_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0600 submodules/proxysql_exporter/support-files/config/proxysql_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
+install -m 0644 submodules/{node,mysqld,mongodb,postgres,proxysql}_exporter/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
+install -m 0644 submodules/qan-agent/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
+install -m 0644 submodules/node_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/mysqld_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/mongodb_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/postgres_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/proxysql_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/qan-agent/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
+install -m 0644 submodules/node_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/mysqld_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/mongodb_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/postgres_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/proxysql_exporter/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
+install -m 0644 submodules/qan-agent/support-files/logrotate.d/* $RPM_BUILD_ROOT/etc/logrotate.d/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
