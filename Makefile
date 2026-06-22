@@ -23,6 +23,7 @@ $(TARBALL_FILE):
 	mkdir -vp $(shell dirname $(TARBALL_FILE))
 
 	GOTOOLCHAIN=local GO111MODULE=on go mod vendor
+	git submodule update --init --force
 
 	for submodule_dir in $(shell find $(CURDIR)/submodules -maxdepth 1 -mindepth 1 -type d); do \
 		cd $${submodule_dir}; \
