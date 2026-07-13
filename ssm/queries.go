@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -262,6 +263,10 @@ func (a *Admin) RemoveQueries(name string) error {
 		// Remove config files
 		os.Remove(fmt.Sprintf("%s/config/qan-%s.conf", AgentBaseDir, uuid))
 		os.Remove(fmt.Sprintf("%s/instance/%s.conf", AgentBaseDir, uuid))
+		cacheFiles, _ := filepath.Glob(fmt.Sprintf("%s/cache/%s.*", AgentBaseDir, uuid))
+		for _, cacheFile := range cacheFiles {
+			os.Remove(cacheFile)
+		}
 	}
 
 	// Stop and uninstall service.
@@ -478,6 +483,7 @@ func (a *Admin) registerAgent() error {
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "config"))
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "data"))
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "instance"))
+	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "cache"))
 
 	path := fmt.Sprintf("%s/bin/ssm-qan-agent-installer", AgentBaseDir)
 	args := []string{"-basedir", AgentBaseDir}

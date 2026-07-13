@@ -9,6 +9,8 @@ import (
 // QueriesFlags Queries specific flags.
 type QueriesFlags struct {
 	DisableQueryExamples bool
+	PrefetchMetadata     bool
+	PrefetchExplain      bool
 }
 
 // Queries is a common interface for all Query Analytics plugins.

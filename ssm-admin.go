@@ -1792,6 +1792,8 @@ func main() {
 		cmd.Flags().BoolVar(&flagMySQLQueries.SlowLogRotation, "slow-log-rotation", true, "enable slow log rotation")
 		cmd.Flags().IntVar(&flagMySQLQueries.RetainSlowLogs, "retain-slow-logs", 1, "number of slow logs to retain after rotation")
 		cmd.Flags().StringVar(&flagMySQLQueries.QuerySource, "query-source", "auto", "source of SQL queries: auto, slowlog, perfschema")
+		cmd.Flags().BoolVar(&flagQueries.PrefetchMetadata, "prefetch-metadata", true, "enable prefetch metadata")
+		cmd.Flags().BoolVar(&flagQueries.PrefetchExplain, "explain-when-not-in-slow-log", false, "enable fetching EXPLAIN data when it's not in slow log")
 	}
 	// Common MySQL Tuning flags.
 	addCommonMySQLTuningFlags := func(cmd *cobra.Command) {}
@@ -1825,9 +1827,11 @@ func main() {
 	// Common PostgreSQL Queries flags.
 	addCommonPostgreSQLQueriesFlags := func(cmd *cobra.Command) {
 		cmd.Flags().StringVar(&flagPostgreSQLQueries.QuerySource, "query-source", "auto", "source of SQL queries: auto, logfile, table")
+		cmd.Flags().BoolVar(&flagQueries.PrefetchMetadata, "prefetch-metadata", true, "enable prefetch metadata")
 	}
 	// ssm-admin add postgresql
 	addCommonPostgreSQLFlags(cmdAddPostgreSQL)
+	addCommonPostgreSQLQueriesFlags(cmdAddPostgreSQL)
 	// ssm-admin add postgresql:metrics
 	addCommonPostgreSQLFlags(cmdAddPostgreSQLMetrics)
 	// ssm-admin add postgresql:queries
@@ -1846,6 +1850,7 @@ func main() {
 	// Common MongoDB Queries flags.
 	addCommonMongoDBQueriesFlags := func(cmd *cobra.Command) {
 		cmd.Flags().BoolVar(&flagQueries.DisableQueryExamples, "disable-queryexamples", false, "disable collection of query examples")
+		cmd.Flags().BoolVar(&flagQueries.PrefetchMetadata, "prefetch-metadata", true, "enable prefetch metadata")
 	}
 	// ssm-admin add mongodb
 	addCommonMongoDBFlags(cmdAddMongoDB)

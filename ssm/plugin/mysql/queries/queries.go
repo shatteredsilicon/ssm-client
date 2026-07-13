@@ -82,8 +82,10 @@ func (q Queries) Config() pc.QAN {
 		Interval:       60,
 		ExampleQueries: &exampleQueries,
 		// "slowlog" specific options.
-		SlowLogRotation: &q.flags.SlowLogRotation,
-		RetainSlowLogs:  &q.flags.RetainSlowLogs,
+		SlowLogRotation:  &q.flags.SlowLogRotation,
+		RetainSlowLogs:   &q.flags.RetainSlowLogs,
+		PrefetchMetadata: &q.queriesFlags.PrefetchMetadata,
+		PrefetchExplain:  &q.queriesFlags.PrefetchExplain,
 	}
 }
 
