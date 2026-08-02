@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
@@ -92,4 +93,16 @@ func (q Queries) Config() pc.QAN {
 // FilterOmit returns queries that should be omitted
 func (q Queries) FilterOmit() []string {
 	return q.mysqlFlags.FilterOmit
+}
+
+func (q Queries) InstallerArgs() []string {
+	var args []string
+	if q.mysqlFlags.ExcludeMonitoring {
+		args = append(args, "-exclude-monitoring-from-slowlog")
+	}
+	if q.mysqlFlags.SQLCheckTimeout > 0 {
+		args = append(args, fmt.Sprintf("-sql-check-timeout=%s", q.mysqlFlags.SQLCheckTimeout.String()))
+	}
+
+	return args
 }

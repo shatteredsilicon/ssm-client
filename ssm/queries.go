@@ -83,14 +83,16 @@ func (a *Admin) AddQueries(ctx context.Context, q plugin.Queries, prevInfo *plug
 	}
 
 	var filterOmit []string
+	var installerArgs []string
 	if mysqlQueries, isMySQL := q.(*queries.Queries); isMySQL {
 		filterOmit = mysqlQueries.FilterOmit()
+		installerArgs = mysqlQueries.InstallerArgs()
 	}
 
 	// Register agent if config file does not exist.
 	agentConfigFile := fmt.Sprintf("%s/config/agent.conf", AgentBaseDir)
 	if !FileExists(agentConfigFile) {
-		if err := a.registerAgent(); err != nil {
+		if err := a.registerAgent(installerArgs...); err != nil {
 			return nil, err
 		}
 	}
@@ -103,7 +105,7 @@ func (a *Admin) AddQueries(ctx context.Context, q plugin.Queries, prevInfo *plug
 	parentUUID, err := a.getAgentInstance(agentID)
 	if err == errNoInstance {
 		// If agent is orphaned, let's re-register it.
-		if err := a.registerAgent(); err != nil {
+		if err := a.registerAgent(installerArgs...); err != nil {
 			return nil, err
 		}
 		// Get new agent id.
@@ -478,7 +480,7 @@ func (a *Admin) sendQANCmd(agentID, cmdName string, data []byte) error {
 }
 
 // registerAgent register agent on QAN API using agent installer.
-func (a *Admin) registerAgent() error {
+func (a *Admin) registerAgent(extraArgs ...string) error {
 	// Remove agent dirs to ensure clean installation. Using full paths to avoid unexpected removals.
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "config"))
 	os.RemoveAll(fmt.Sprintf("%s/%s", AgentBaseDir, "data"))
@@ -497,6 +499,7 @@ func (a *Admin) registerAgent() error {
 		args = append(args, fmt.Sprintf("-server-user=%s", a.Config.ServerUser),
 			fmt.Sprintf("-server-pass=%s", a.Config.ServerPassword))
 	}
+	args = append(args, extraArgs...)
 	args = append(args, fmt.Sprintf("%s/%s", a.serverURL, qanAPIBasePath))
 	if _, err := exec.Command(path, args...).Output(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

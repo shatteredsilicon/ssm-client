@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/percona/go-mysql/dsn"
@@ -28,7 +29,9 @@ type Flags struct {
 	MaxUserConn        uint16
 	Force              bool
 
-	FilterOmit []string
+	FilterOmit        []string
+	ExcludeMonitoring bool
+	SQLCheckTimeout   time.Duration
 }
 
 // Init verifies MySQL connection and creates SSM user if requested.
