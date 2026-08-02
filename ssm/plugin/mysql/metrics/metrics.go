@@ -109,6 +109,10 @@ func (m *Metrics) Init(
 	cfgFile.Section("web").Key("auth-file").SetValue(authFile)
 	cfgFile.Section("web").Key("ssl-key-file").SetValue(sslKeyFile)
 	cfgFile.Section("web").Key("ssl-cert-file").SetValue(sslCertFile)
+	cfgFile.Section("exporter").Key("exclude_monitoring_from_slowlog").SetValue(strconv.FormatBool(m.mysqlFlags.ExcludeMonitoring))
+	if m.mysqlFlags.SQLCheckTimeout > 0 {
+		cfgFile.Section("exporter").Key("sql_check_time").SetValue(m.mysqlFlags.SQLCheckTimeout.String())
+	}
 	err = cfgFile.SaveTo(m.cfgPath)
 	if err != nil {
 		return nil, err
