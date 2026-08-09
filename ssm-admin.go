@@ -425,9 +425,11 @@ Type ssm-admin add mysql:queries --help to see all acceptable flags.
 				os.Exit(1)
 			}
 			// Check --query-source flag.
-			if flagMySQLQueries.QuerySource != "auto" && flagMySQLQueries.QuerySource != "slowlog" && flagMySQLQueries.QuerySource != "perfschema" {
-				fmt.Println("Flag --query-source can take the following values: auto, slowlog, perfschema.")
-				os.Exit(1)
+			for _, querySource := range strings.Split(flagMySQLQueries.QuerySource, ",") {
+				if querySource != "auto" && querySource != "slowlog" && querySource != "perfschema" {
+					fmt.Println("Flag --query-source can take the following values: auto, slowlog, perfschema.")
+					os.Exit(1)
+				}
 			}
 			mysqlQueries := mysqlQueries.New(flagQueries, flagMySQLQueries, flagMySQL)
 			info, err := admin.AddQueries(ctx, mysqlQueries, nil)
@@ -1793,7 +1795,7 @@ func main() {
 		cmd.Flags().BoolVar(&flagQueries.DisableQueryExamples, "disable-queryexamples", false, "disable collection of query examples")
 		cmd.Flags().BoolVar(&flagMySQLQueries.SlowLogRotation, "slow-log-rotation", true, "enable slow log rotation")
 		cmd.Flags().IntVar(&flagMySQLQueries.RetainSlowLogs, "retain-slow-logs", 1, "number of slow logs to retain after rotation")
-		cmd.Flags().StringVar(&flagMySQLQueries.QuerySource, "query-source", "auto", "source of SQL queries: auto, slowlog, perfschema")
+		cmd.Flags().StringVar(&flagMySQLQueries.QuerySource, "query-source", "auto", "comma-separated source of SQL queries: auto, slowlog, perfschema")
 		cmd.Flags().BoolVar(&flagQueries.PrefetchMetadata, "prefetch-metadata", true, "enable prefetch metadata")
 		cmd.Flags().BoolVar(&flagQueries.PrefetchExplain, "explain-when-not-in-slow-log", false, "enable fetching EXPLAIN data when it's not in slow log")
 	}
