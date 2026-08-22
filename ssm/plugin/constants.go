@@ -17,7 +17,6 @@ const (
 	PostgreSQLExporter = "postgres_exporter"
 	ProxySQLExporter   = "proxysql_exporter"
 	SSMQanAgent        = "ssm-qan-agent"
-	PMMQanAgent        = "pmm-qan-agent"
 )
 
 // Data types

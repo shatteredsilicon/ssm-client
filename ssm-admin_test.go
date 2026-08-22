@@ -40,12 +40,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type pmmAdminData struct {
+type ssmAdminData struct {
 	bin     string
 	rootDir string
 }
 
-func TestPmmAdmin(t *testing.T) {
+func TestSSMAdmin(t *testing.T) {
 	var err error
 
 	// We can't/shouldn't use /opt/ss/ (the default basedir), so use
@@ -86,11 +86,11 @@ func TestPmmAdmin(t *testing.T) {
 	err = cmd.Run()
 	assert.Nil(t, err, "Failed to build: %s", err)
 
-	data := pmmAdminData{
+	data := ssmAdminData{
 		bin:     bin,
 		rootDir: rootDir,
 	}
-	tests := []func(*testing.T, pmmAdminData){
+	tests := []func(*testing.T, ssmAdminData){
 		testAddMongoDB,
 		testAddMongoDBAdditionalParamsErr,
 		testAddMongoDBMetrics,
@@ -139,7 +139,7 @@ func TestPmmAdmin(t *testing.T) {
 
 }
 
-func testVersion(t *testing.T, data pmmAdminData) {
+func testVersion(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -159,7 +159,7 @@ func testVersion(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testHelp(t *testing.T, data pmmAdminData) {
+func testHelp(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -225,7 +225,7 @@ Use "ssm-admin \[command\] --help" for more information about a command.
 	})
 }
 
-func testHelpAddPostgreSQL(t *testing.T, data pmmAdminData) {
+func testHelpAddPostgreSQL(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -235,7 +235,7 @@ func testHelpAddPostgreSQL(t *testing.T, data pmmAdminData) {
 
 When adding a PostgreSQL instance, this tool tries to auto-detect the DSN and credentials.
 If you want to create a new user to be used for metrics collecting, provide --create-user option. ssm-admin will create
-a new user 'pmm' automatically using the given \(auto-detected\) PostgreSQL credentials for granting purpose.
+a new user 'ssm' automatically using the given \(auto-detected\) PostgreSQL credentials for granting purpose.
 
 \[name\] is an optional argument, by default it is set to the client name of this SSM client.
 
@@ -281,7 +281,7 @@ Global Flags:
 	})
 }
 
-func testConfig(t *testing.T, data pmmAdminData) {
+func testConfig(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -321,7 +321,7 @@ func testConfig(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testConfigVerbose(t *testing.T, data pmmAdminData) {
+func testConfigVerbose(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -426,7 +426,7 @@ Client Address  | ` + hostPort + `
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testConfigVerboseServerNotAvailable(t *testing.T, data pmmAdminData) {
+func testConfigVerboseServerNotAvailable(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -465,7 +465,7 @@ Get http://xyz/qan-api/ping: dial tcp: lookup xyz.*: no such host
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testConfigServerHideCredentials(t *testing.T, data pmmAdminData) {
+func testConfigServerHideCredentials(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.NoError(t, err)
@@ -499,20 +499,20 @@ Get http://172.0.0.1:8080/qan-api/ping: net/http: request canceled while waiting
 	assert.Equal(t, expected, string(output))
 }
 
-func testStartStopRestartAllWithNoServices(t *testing.T, data pmmAdminData) {
+func testStartStopRestartAllWithNoServices(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
 	}()
 	createFakeENV(t, data)
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: "just",
 		ClientName:    "non",
 		ClientAddress: "empty",
 		BindAddress:   "data",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	services := []string{
@@ -540,7 +540,7 @@ func testStartStopRestartAllWithNoServices(t *testing.T, data pmmAdminData) {
 	})
 }
 
-func testListEmpty(t *testing.T, data pmmAdminData) {
+func testListEmpty(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -562,13 +562,13 @@ func testListEmpty(t *testing.T, data pmmAdminData) {
 	_, host, port := fapi.Start()
 	defer fapi.Close()
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: fmt.Sprintf("%s:%s", host, port),
 		ClientName:    clientName,
 		ClientAddress: "empty",
 		BindAddress:   "data",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	// Test empty list
@@ -594,7 +594,7 @@ No services under monitoring.
 
 }
 
-func testListNonEmpty(t *testing.T, data pmmAdminData) {
+func testListNonEmpty(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -635,13 +635,13 @@ func testListNonEmpty(t *testing.T, data pmmAdminData) {
 	_, host, port := fapi.Start()
 	defer fapi.Close()
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: fmt.Sprintf("%s:%s", host, port),
 		ClientName:    clientName,
 		ClientAddress: "empty",
 		BindAddress:   "data",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	// create fake system service
@@ -803,7 +803,7 @@ mysql:queries          test-client-name        -                 YES            
 	})
 }
 
-func testStartStopRestart(t *testing.T, data pmmAdminData) {
+func testStartStopRestart(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -835,13 +835,13 @@ func testStartStopRestart(t *testing.T, data pmmAdminData) {
 	_, host, port := fapi.Start()
 	defer fapi.Close()
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: fmt.Sprintf("%s:%s", host, port),
 		ClientName:    clientName,
 		ClientAddress: "empty",
 		BindAddress:   "data",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	// create fake system service
@@ -892,20 +892,20 @@ func testStartStopRestart(t *testing.T, data pmmAdminData) {
 	})
 }
 
-func testStartStopRestartAllWithServices(t *testing.T, data pmmAdminData) {
+func testStartStopRestartAllWithServices(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
 	}()
 	createFakeENV(t, data)
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: "just",
 		ClientName:    "non",
 		ClientAddress: "empty",
 		BindAddress:   "data",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	// create fake system services
@@ -975,7 +975,7 @@ Get http://just/qan-api/ping: dial tcp: lookup just.*: no such host
 	})
 }
 
-func testStartStopRestartNoServiceFound(t *testing.T, data pmmAdminData) {
+func testStartStopRestartNoServiceFound(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -995,13 +995,13 @@ func testStartStopRestartNoServiceFound(t *testing.T, data pmmAdminData) {
 	_, host, port := fapi.Start()
 	defer fapi.Close()
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: fmt.Sprintf("%s:%s", host, port),
 		ClientName:    clientName,
 		ClientAddress: "localhost",
 		BindAddress:   "localhost",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 	svcName := "mysql:queries"
 
@@ -1045,7 +1045,7 @@ func testStartStopRestartNoServiceFound(t *testing.T, data pmmAdminData) {
 	})
 }
 
-func testCheckNetwork(t *testing.T, data pmmAdminData) {
+func testCheckNetwork(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1066,13 +1066,13 @@ func testCheckNetwork(t *testing.T, data pmmAdminData) {
 	_, host, port := fapi.Start()
 	defer fapi.Close()
 
-	pmmConfig := ssm.Config{
+	ssmConfig := ssm.Config{
 		ServerAddress: fmt.Sprintf("%s:%s", host, port),
 		ClientName:    clientName,
 		ClientAddress: "localhost",
 		BindAddress:   "localhost",
 	}
-	bytes, _ := yaml.Marshal(pmmConfig)
+	bytes, _ := yaml.Marshal(ssmConfig)
 	ioutil.WriteFile(data.rootDir+ssm.SSMBaseDir+"/ssm.yml", bytes, 0600)
 
 	// Test the command
@@ -1118,7 +1118,7 @@ No metric endpoints registered.
 	}
 }
 
-func testAddLinuxMetricsWithAdditionalArgsOk(t *testing.T, data pmmAdminData) {
+func testAddLinuxMetricsWithAdditionalArgsOk(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1141,7 +1141,7 @@ func testAddLinuxMetricsWithAdditionalArgsOk(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1168,7 +1168,7 @@ func testAddLinuxMetricsWithAdditionalArgsOk(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddLinuxMetricsWithAdditionalArgsFail(t *testing.T, data pmmAdminData) {
+func testAddLinuxMetricsWithAdditionalArgsFail(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1191,7 +1191,7 @@ func testAddLinuxMetricsWithAdditionalArgsFail(t *testing.T, data pmmAdminData) 
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1219,7 +1219,7 @@ func testAddLinuxMetricsWithAdditionalArgsFail(t *testing.T, data pmmAdminData) 
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddPostgreSQL(t *testing.T, data pmmAdminData) {
+func testAddPostgreSQL(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1243,7 +1243,7 @@ func testAddPostgreSQL(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1269,7 +1269,7 @@ func testAddPostgreSQL(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddPostgreSQLMetrics(t *testing.T, data pmmAdminData) {
+func testAddPostgreSQLMetrics(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1293,7 +1293,7 @@ func testAddPostgreSQLMetrics(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1318,7 +1318,7 @@ func testAddPostgreSQLMetrics(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddPostgreSQLMetricsErr(t *testing.T, data pmmAdminData) {
+func testAddPostgreSQLMetricsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1342,7 +1342,7 @@ func testAddPostgreSQLMetricsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1374,7 +1374,7 @@ Please see the SSM FAQ for additional troubleshooting steps: https://github.com/
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddPostgreSQLWithCreateUser(t *testing.T, data pmmAdminData) {
+func testAddPostgreSQLWithCreateUser(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1398,7 +1398,7 @@ func testAddPostgreSQLWithCreateUser(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1426,7 +1426,7 @@ func testAddPostgreSQLWithCreateUser(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQL(t *testing.T, data pmmAdminData) {
+func testAddMySQL(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1463,7 +1463,7 @@ func testAddMySQL(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1492,7 +1492,7 @@ func testAddMySQL(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLAdditionalParamsErr(t *testing.T, data pmmAdminData) {
+func testAddMySQLAdditionalParamsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1529,7 +1529,7 @@ func testAddMySQLAdditionalParamsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1561,7 +1561,7 @@ ssm-admin add mysql:metrics --  --collect.perf_schema.eventsstatements
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLQueryWithAdditionalParamsErr(t *testing.T, data pmmAdminData) {
+func testAddMySQLQueryWithAdditionalParamsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1598,7 +1598,7 @@ func testAddMySQLQueryWithAdditionalParamsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1627,7 +1627,7 @@ Type ssm-admin add mysql:queries --help to see all acceptable flags.
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLMetrics(t *testing.T, data pmmAdminData) {
+func testAddMySQLMetrics(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1664,7 +1664,7 @@ func testAddMySQLMetrics(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1691,7 +1691,7 @@ func testAddMySQLMetrics(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLMetricsErr(t *testing.T, data pmmAdminData) {
+func testAddMySQLMetricsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1728,7 +1728,7 @@ func testAddMySQLMetricsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1758,7 +1758,7 @@ Use additional flags --user, --password, --host, --port, --socket if needed.
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLWithCreateUser(t *testing.T, data pmmAdminData) {
+func testAddMySQLWithCreateUser(t *testing.T, data ssmAdminData) {
 	t.Skip(`
 		ssm-admin restricts user to connect only from 127.0.0.1 if it detects it's localhost.
 		However IP received by MySQL in docker container is not 127.0.0.1
@@ -1801,7 +1801,7 @@ func testAddMySQLWithCreateUser(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1826,13 +1826,13 @@ func testAddMySQLWithCreateUser(t *testing.T, data pmmAdminData) {
 	output, err := cmd.CombinedOutput()
 	assert.NoError(t, err)
 	expected := `\[linux:metrics\] OK, now monitoring this system.
-\[mysql:metrics\] OK, now monitoring MySQL metrics using DSN pmm:\*\*\*@tcp\(127.0.0.1:3306\)
-\[mysql:queries\] OK, now monitoring MySQL queries from perfschema using DSN pmm:\*\*\*@tcp\(127.0.0.1:3306\)
+\[mysql:metrics\] OK, now monitoring MySQL metrics using DSN ssm:\*\*\*@tcp\(127.0.0.1:3306\)
+\[mysql:queries\] OK, now monitoring MySQL queries from perfschema using DSN ssm:\*\*\*@tcp\(127.0.0.1:3306\)
 `
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMySQLWithDisableSlowLogsRotation(t *testing.T, data pmmAdminData) {
+func testAddMySQLWithDisableSlowLogsRotation(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -1897,7 +1897,7 @@ func testAddMySQLWithDisableSlowLogsRotation(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -1947,7 +1947,7 @@ func testAddMySQLWithDisableSlowLogsRotation(t *testing.T, data pmmAdminData) {
 	}
 }
 
-func testAddMySQLWithRetainSlowLogs(t *testing.T, data pmmAdminData) {
+func testAddMySQLWithRetainSlowLogs(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2008,7 +2008,7 @@ func testAddMySQLWithRetainSlowLogs(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2058,7 +2058,7 @@ func testAddMySQLWithRetainSlowLogs(t *testing.T, data pmmAdminData) {
 	}
 }
 
-func testAddMongoDB(t *testing.T, data pmmAdminData) {
+func testAddMongoDB(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2095,7 +2095,7 @@ func testAddMongoDB(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2124,7 +2124,7 @@ func testAddMongoDB(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMongoDBAdditionalParamsErr(t *testing.T, data pmmAdminData) {
+func testAddMongoDBAdditionalParamsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2161,7 +2161,7 @@ func testAddMongoDBAdditionalParamsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2190,7 +2190,7 @@ ssm-admin add mongodb:metrics --  --collect.mongo.attrs
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMongoDBMetrics(t *testing.T, data pmmAdminData) {
+func testAddMongoDBMetrics(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2227,7 +2227,7 @@ func testAddMongoDBMetrics(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2251,7 +2251,7 @@ func testAddMongoDBMetrics(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMongoDBMetricsErr(t *testing.T, data pmmAdminData) {
+func testAddMongoDBMetricsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2288,7 +2288,7 @@ func testAddMongoDBMetricsErr(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2313,7 +2313,7 @@ func testAddMongoDBMetricsErr(t *testing.T, data pmmAdminData) {
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMongoDBQueries(t *testing.T, data pmmAdminData) {
+func testAddMongoDBQueries(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2350,7 +2350,7 @@ func testAddMongoDBQueries(t *testing.T, data pmmAdminData) {
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2377,7 +2377,7 @@ For more information read SSM documentation \(https://github.com/shatteredsilico
 	assertRegexpLines(t, expected, string(output))
 }
 
-func testAddMongoDBQueriesWithAdditionalParamsErr(t *testing.T, data pmmAdminData) {
+func testAddMongoDBQueriesWithAdditionalParamsErr(t *testing.T, data ssmAdminData) {
 	defer func() {
 		err := os.RemoveAll(data.rootDir)
 		assert.Nil(t, err)
@@ -2414,7 +2414,7 @@ func testAddMongoDBQueriesWithAdditionalParamsErr(t *testing.T, data pmmAdminDat
 		_, host, port := fapi.Start()
 		defer fapi.Close()
 
-		// Configure pmm
+		// Configure ssm
 		cmd := exec.Command(
 			data.bin,
 			"config",
@@ -2476,7 +2476,7 @@ func assertRegexpLines(t *testing.T, rx string, str string, msgAndArgs ...interf
 	}
 }
 
-func createFakeENV(t *testing.T, data pmmAdminData) {
+func createFakeENV(t *testing.T, data ssmAdminData) {
 	dirs := []string{
 		filepath.Join(data.rootDir, ssm.SSMBaseDir),
 		filepath.Join(data.rootDir, ssm.AgentBaseDir, "bin"),
@@ -2541,6 +2541,6 @@ EOF`)
 
 	f, err = os.Create(filepath.Join(data.rootDir, ssm.AgentBaseDir, "config/agent.conf"))
 	assert.NoError(t, err)
-	fmt.Fprintln(f, `{"UUID":"42","ApiHostname":"somehostname","ApiPath":"/qan-api","ServerUser":"pmm"}`)
+	fmt.Fprintln(f, `{"UUID":"42","ApiHostname":"somehostname","ApiPath":"/qan-api","ServerUser":"ssm"}`)
 	f.Close()
 }

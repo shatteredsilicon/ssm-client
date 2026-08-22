@@ -41,7 +41,7 @@ func TestMySQLCheck1(t *testing.T) {
 	rows = sqlmock.NewRows([]string{"col1"})
 	mock.ExpectQuery("SHOW SLAVE STATUS").WillReturnRows(rows)
 
-	mock.ExpectQuery("SHOW GRANTS FOR 'pmm'@'localhost'").WillReturnError(err)
+	mock.ExpectQuery("SHOW GRANTS FOR 'ssm'@'localhost'").WillReturnError(err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -66,7 +66,7 @@ func TestMySQLCheck2(t *testing.T) {
 	rows = sqlmock.NewRows([]string{"col1"})
 	mock.ExpectQuery("SHOW SLAVE STATUS").WillReturnRows(rows)
 
-	mock.ExpectQuery("SHOW GRANTS FOR 'pmm'@'localhost'").WillReturnError(err)
+	mock.ExpectQuery("SHOW GRANTS FOR 'ssm'@'localhost'").WillReturnError(err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -91,7 +91,7 @@ func TestMySQLCheck3(t *testing.T) {
 	rows = sqlmock.NewRows([]string{"col1"}).AddRow("1")
 	mock.ExpectQuery("SHOW SLAVE STATUS").WillReturnRows(rows)
 
-	mock.ExpectQuery("SHOW GRANTS FOR 'pmm'@'localhost'").WillReturnError(err)
+	mock.ExpectQuery("SHOW GRANTS FOR 'ssm'@'localhost'").WillReturnError(err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -117,7 +117,7 @@ func TestMySQLCheck4(t *testing.T) {
 	mock.ExpectQuery("SHOW SLAVE STATUS").WillReturnRows(rows)
 
 	rows = sqlmock.NewRows([]string{"col1"}).AddRow("grants...")
-	mock.ExpectQuery("SHOW GRANTS FOR 'pmm'@'localhost'").WillReturnRows(rows)
+	mock.ExpectQuery("SHOW GRANTS FOR 'ssm'@'localhost'").WillReturnRows(rows)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

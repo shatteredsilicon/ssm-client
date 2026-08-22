@@ -9,7 +9,7 @@ type Metrics interface {
 	// Init initializes plugin and returns Info about database.
 	Init(
 		ctx context.Context,
-		pmmUserPassword string,
+		ssmUserPassword string,
 		bindAddress string,
 		authFile string,
 		sslKeyFile string,

@@ -52,7 +52,6 @@ override_dh_auto_install:
 	install -d $(TMP)/init
 	install -d $(TMP)/config
 	cp $(GOPATH)/bin/ssm-client $(TMP)/ssm-admin
-	cp $(GOPATH)/bin/ssm-client $(TMP)/pmm-admin
 	cp -f $(GOPATH)/bin/node_exporter $(TMP)/node_exporter
 	cp -f $(GOPATH)/bin/mysqld_exporter $(TMP)/mysqld_exporter
 	cp -f $(GOPATH)/bin/postgres_exporter $(TMP)/postgres_exporter

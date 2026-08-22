@@ -34,15 +34,15 @@ func TestMakeGrants(t *testing.T) {
 	}
 	samples := []sample{
 		{
-			dsn: DSN{User: "pmm", Password: "abc123"},
+			dsn: DSN{User: "ssm", Password: "abc123"},
 			grants: []string{
-				"CREATE USER \"pmm\" WITH PASSWORD 'abc123'",
-				"CREATE SCHEMA \"pmm\" AUTHORIZATION \"pmm\"",
-				"ALTER USER \"pmm\" SET SEARCH_PATH TO \"pmm\",pg_catalog",
-				"CREATE OR REPLACE VIEW \"pmm\".pg_stat_activity AS SELECT * from pg_catalog.pg_stat_activity",
-				"GRANT SELECT ON \"pmm\".pg_stat_activity TO \"pmm\"",
-				"CREATE OR REPLACE VIEW \"pmm\".pg_stat_replication AS SELECT * from pg_catalog.pg_stat_replication",
-				"GRANT SELECT ON \"pmm\".pg_stat_replication TO \"pmm\"",
+				"CREATE USER \"ssm\" WITH PASSWORD 'abc123'",
+				"CREATE SCHEMA \"ssm\" AUTHORIZATION \"ssm\"",
+				"ALTER USER \"ssm\" SET SEARCH_PATH TO \"ssm\",pg_catalog",
+				"CREATE OR REPLACE VIEW \"ssm\".pg_stat_activity AS SELECT * from pg_catalog.pg_stat_activity",
+				"GRANT SELECT ON \"ssm\".pg_stat_activity TO \"ssm\"",
+				"CREATE OR REPLACE VIEW \"ssm\".pg_stat_replication AS SELECT * from pg_catalog.pg_stat_replication",
+				"GRANT SELECT ON \"ssm\".pg_stat_replication TO \"ssm\"",
 			},
 		},
 		{

@@ -1,5 +1,4 @@
 ssm-admin /usr/sbin/
-pmm-admin /usr/sbin/
 node_exporter /opt/ss/ssm-client/
 mysqld_exporter /opt/ss/ssm-client/
 postgres_exporter /opt/ss/ssm-client/

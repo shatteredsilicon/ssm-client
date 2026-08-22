@@ -40,7 +40,7 @@ type ExternalTarget struct {
 
 // ExternalMetrics represents external Prometheus exporter configuration: job and targets.
 // Field names are used for JSON output, so do not rename them.
-// JSON output uses Prometheus and pmm-managed API terms; TUI uses terms aligned with other commands.
+// JSON output uses Prometheus and ssm-managed API terms; TUI uses terms aligned with other commands.
 type ExternalMetrics struct {
 	JobName        string           `json:"job_name"`
 	ScrapeInterval time.Duration    `json:"scrape_interval"` // nanoseconds in JSON

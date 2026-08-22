@@ -68,15 +68,15 @@ func (c *Collector) CollectData() error {
 // CheckMonitoredDBServices finds out what DB instances are monitored.
 func CheckMonitoredDBServices() []string {
 	var monitoredDBServices []string
-	cmdPmmList, err := exec.Command("ssm-admin", "list").Output()
+	cmdList, err := exec.Command("ssm-admin", "list").Output()
 	if err != nil {
 		fmt.Println("Error exec ssm-admin list", err)
 		return nil
 	}
-	if strings.Contains(string(cmdPmmList), "mysql:metrics") {
+	if strings.Contains(string(cmdList), "mysql:metrics") {
 		monitoredDBServices = append(monitoredDBServices, "mysql")
 	}
-	if strings.Contains(string(cmdPmmList), "mongodb:metrics") {
+	if strings.Contains(string(cmdList), "mongodb:metrics") {
 		monitoredDBServices = append(monitoredDBServices, "mongodb")
 	}
 
@@ -167,7 +167,7 @@ func tarIt(source, target string) error {
 	return err
 }
 
-// CollectSummary get output of system and pmm utilites.
+// CollectSummary get output of system and ssm utilites.
 func (a *Admin) CollectSummary() error {
 	fmt.Println("\nCollecting information for system diagnostic")
 	// Create a directory for collecting files and log file for possible errors
@@ -246,7 +246,7 @@ func (a *Admin) CollectSummary() error {
 		summaryLogger.Printf("%s - %v\n", info.CollectorDescription, info.CollectData())
 	}
 
-	// Collect pmm logs from /var/log
+	// Collect logs from /var/log
 	logsDir := "/var/log"
 	srcf, err := os.Open(logsDir)
 	if err != nil {

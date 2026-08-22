@@ -14,9 +14,6 @@ Source0:        ssm-client-%{version}-%{release}.tar.gz
 AutoReq:        no
 BuildRequires:  glibc-devel, glibc-static, golang >= 1.24, unzip, gzip, make, perl-ExtUtils-MakeMaker, git, systemd
 
-Obsoletes: pmm-client <= 1.17.5
-Conflicts: pmm-client > 1.17.5
-
 Requires: percona-toolkit
 
 Requires(post):     systemd
@@ -68,7 +65,6 @@ strip %{_GOPATH}/bin/* || true
 %install
 install -m 0755 -d $RPM_BUILD_ROOT/usr/sbin
 install -m 0755 %{_GOPATH}/bin/ssm-client $RPM_BUILD_ROOT/usr/sbin/ssm-admin
-install -m 0755 %{_GOPATH}/bin/ssm-client $RPM_BUILD_ROOT/usr/sbin/pmm-admin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/qan-agent/bin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector
@@ -103,17 +99,7 @@ fi
 
 %post
 # Upgrade
-if [ $1 -gt 1 ] || [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
-    # Upgrade from PMM
-    if [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
-        cp -n /usr/local/percona/pmm-client/pmm.yml /opt/ss/ssm-client/ssm.yml
-    fi
-    if [ -f /usr/local/percona/pmm-client/server.crt ]; then
-        cp -n /usr/local/percona/pmm-client/server.crt /opt/ss/ssm-client/server.crt
-    fi
-    if [ -f /usr/local/percona/pmm-client/server.key ]; then
-        cp -n /usr/local/percona/pmm-client/server.key /opt/ss/ssm-client/server.key
-    fi
+if [ $1 -gt 1 ]; then
     if [ -d /usr/local/percona/qan-agent ] && [ ! -f /opt/ss/qan-agent/config/agent.conf ]; then
         find /usr/local/percona/qan-agent -maxdepth 1 ! -path /usr/local/percona/qan-agent ! -name bin -exec cp -r "{}" /opt/ss/qan-agent/ \;
     fi
@@ -213,5 +199,4 @@ fi
 /opt/ss/qan-agent/bin/*
 %config /lib/systemd/system/ssm-*.service
 /usr/sbin/ssm-admin
-/usr/sbin/pmm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf

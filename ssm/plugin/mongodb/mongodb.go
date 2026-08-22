@@ -30,8 +30,8 @@ import (
 )
 
 // Init verifies MongoDB connection.
-func Init(ctx context.Context, uri string, args []string, pmmBaseDir string) (*plugin.Info, error) {
-	path := fmt.Sprintf("%s/mongodb_exporter", pmmBaseDir)
+func Init(ctx context.Context, uri string, args []string, baseDir string) (*plugin.Info, error) {
+	path := fmt.Sprintf("%s/mongodb_exporter", baseDir)
 	// Add additional args passed to ssm-admin
 	args = append([]string{"--test"}, args...)
 	cmd := exec.CommandContext(

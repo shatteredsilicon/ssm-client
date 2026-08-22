@@ -30,16 +30,16 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	pmmBaseDir, err := ioutil.TempDir("/tmp", "ssm-client-test-rootdir-")
+	baseDir, err := ioutil.TempDir("/tmp", "ssm-client-test-rootdir-")
 	assert.NoError(t, err)
 	defer func() {
-		err := os.RemoveAll(pmmBaseDir)
+		err := os.RemoveAll(baseDir)
 		assert.Nil(t, err)
 	}()
 
-	err = os.MkdirAll(pmmBaseDir, 0777)
+	err = os.MkdirAll(baseDir, 0777)
 	assert.NoError(t, err)
-	f, _ := os.Create(filepath.Join(pmmBaseDir, "mongodb_exporter"))
+	f, _ := os.Create(filepath.Join(baseDir, "mongodb_exporter"))
 	fmt.Fprintln(f, "#!/bin/sh")
 	fmt.Fprintln(f, `cat << 'EOF'
 {
@@ -60,12 +60,12 @@ func TestInit(t *testing.T) {
 
 EOF`)
 	f.Close()
-	err = os.Chmod(filepath.Join(pmmBaseDir, "mongodb_exporter"), 0777)
+	err = os.Chmod(filepath.Join(baseDir, "mongodb_exporter"), 0777)
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	buildInfo, err := Init(ctx, "", []string{}, pmmBaseDir)
+	buildInfo, err := Init(ctx, "", []string{}, baseDir)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, buildInfo)
 }

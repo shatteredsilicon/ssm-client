@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-ssm-admin uninstall
-
-rm -f /usr/sbin/ssm-admin
-rm -rf /opt/ss/ssm-client
-rm -rf /opt/ss/qan-agent
-
-echo "Uninstall complete."
