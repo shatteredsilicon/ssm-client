@@ -14,20 +14,20 @@ all: srpm rpm
 endif
 
 TARBALL_FILE	:= $(BUILDDIR)/tarballs/ssm-client-$(VERSION)-$(RELEASE).tar.gz
-SRPM_FILE		:= $(BUILDDIR)/results/SRPMS/ssm-client-$(VERSION)-$(RELEASE).src.rpm
-RPM_FILE		:= $(BUILDDIR)/results/RPMS/ssm-client-$(VERSION)-$(RELEASE).$(ARCH).rpm
+SRPM_FILE		:= $(BUILDDIR)/results/SRPMS/ssm-client-$(VERSION)-$(RELEASE)$(shell rpm --eval "%{?dist}").src.rpm
+RPM_FILE		:= $(BUILDDIR)/results/RPMS/ssm-client-$(VERSION)-$(RELEASE)$(shell rpm --eval "%{?dist}").$(ARCH).rpm
 SDEB_FILES		:= $(BUILDDIR)/results/SDEBS/ssm-client_$(VERSION)-$(RELEASE).dsc $(BUILDDIR)/results/SDEBS/ssm-client_$(VERSION)-$(RELEASE).tar.gz
 DEB_FILES		:= $(BUILDDIR)/results/DEBS/ssm-client_$(VERSION)-$(RELEASE)_$(ARCH).deb $(BUILDDIR)/results/DEBS/ssm-client_$(VERSION)-$(RELEASE)_$(ARCH).changes
 
 $(TARBALL_FILE):
 	mkdir -vp $(shell dirname $(TARBALL_FILE))
 
-	GOTOOLCHAIN=local GO111MODULE=on go mod vendor
-	git submodule update --init --force
+	GOPROXY="https://proxy.golang.org,direct" GOTOOLCHAIN=local GO111MODULE=on go mod vendor
+	git submodule update --init
 
 	for submodule_dir in $(shell find $(CURDIR)/submodules -maxdepth 1 -mindepth 1 -type d); do \
 		cd $${submodule_dir}; \
-			GOTOOLCHAIN=local GO111MODULE=on go mod vendor || exit 1; \
+			GOPROXY="https://proxy.golang.org,direct" GOTOOLCHAIN=local GO111MODULE=on go mod vendor || exit 1; \
 	done; \
 
 	tar --exclude-vcs -czf $(TARBALL_FILE) -C $(shell dirname $(CURDIR)) --transform s/^$(shell basename $(CURDIR))/ssm-client/ $(shell basename $(CURDIR))
@@ -43,6 +43,7 @@ $(SRPM_FILE): $(TARBALL_FILE)
 	sed -i "s/%{_version}/$(VERSION)/g" "$(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec"
 	sed -i "s/%{_release}/$(RELEASE)/g" "$(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec"
 	cp $(TARBALL_FILE) $(BUILDDIR)/rpmbuild/SOURCES/
+	spectool -C $(BUILDDIR)/rpmbuild/SOURCES/ -g $(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec
 	rpmbuild -bs --define "debug_package %{nil}" --define "_topdir $(BUILDDIR)/rpmbuild" $(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec
 	mv $(BUILDDIR)/rpmbuild/SRPMS/$(shell basename $(SRPM_FILE)) $(SRPM_FILE)
 
@@ -51,7 +52,7 @@ rpm: $(RPM_FILE)
 
 $(RPM_FILE): $(SRPM_FILE)
 	mkdir -vp $(BUILDDIR)/mock $(shell dirname $(RPM_FILE))
-	mock -r ssm-7-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
+	mock -r centos-6-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
 	mv $(BUILDDIR)/mock/$(shell basename $(RPM_FILE)) $(RPM_FILE)
 
 .PHONY: sdeb

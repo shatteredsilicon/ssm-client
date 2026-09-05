@@ -5,23 +5,19 @@
 Name:           ssm-client
 Summary:        Shattered Silicon Monitoring Client
 Version:        %{_version}
-Release:        %{_release}
+Release:        %{_release}%{?dist}
 Group:          Applications/Databases
 License:        AGPLv3
 Vendor:         Shattered Silicon
 URL:            https://shatteredsilicon.net
-Source0:        ssm-client-%{version}-%{release}.tar.gz
+Source0:        ssm-client-%{version}-%{_release}.tar.gz
 AutoReq:        no
-BuildRequires:  glibc-devel, glibc-static, golang >= 1.24, unzip, gzip, make, perl-ExtUtils-MakeMaker, git, systemd
+BuildRequires:  golang >= 1.23.12
 
 Obsoletes: pmm-client <= 1.17.5
 Conflicts: pmm-client > 1.17.5
 
 Requires: percona-toolkit
-
-Requires(post):     systemd
-Requires(preun):    systemd
-Requires(postun):   systemd
 
 %description
 Shattered Silicon Monitoring (SSM) is an open-source platform for managing and monitoring MySQL and MongoDB
@@ -47,8 +43,8 @@ pushd submodules/postgres_exporter && GOTOOLCHAIN=local go install -ldflags="-s 
 pushd submodules/proxysql_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
 pushd submodules/mongodb_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
 pushd submodules/mysqld_exporter && GOTOOLCHAIN=local go install -ldflags="-s -w" . && popd
-pushd submodules/qan-agent && GOTOOLCHAIN=local CGO_ENABLED=1 go install -buildvcs=false -tags netgo,osusergo -ldflags="-s -w -linkmode 'external' -extldflags '-static'" ./bin/... && popd
-GOTOOLCHAIN=local go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{release}'" .
+pushd submodules/qan-agent && GOTOOLCHAIN=local go install -ldflags="-s -w" ./bin/... && popd
+GOTOOLCHAIN=local go install -ldflags="-s -w -X 'github.com/shatteredsilicon/ssm-client/ssm.Version=%{version}-%{_release}'" .
 
 strip %{_GOPATH}/bin/* || true
 
@@ -59,7 +55,7 @@ install -m 0755 %{_GOPATH}/bin/ssm-client $RPM_BUILD_ROOT/usr/sbin/pmm-admin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/qan-agent/bin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector
-install -m 0755 -d $RPM_BUILD_ROOT/lib/systemd/system
+install -m 0755 -d $RPM_BUILD_ROOT/etc/init/
 install -m 0755 -d $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0755 -d $RPM_BUILD_ROOT/etc/logrotate.d/
 install -m 0755 %{_GOPATH}/bin/node_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
@@ -76,8 +72,8 @@ install -m 0600 submodules/mysqld_exporter/support-files/config/mysqld_exporter.
 install -m 0600 submodules/mongodb_exporter/support-files/config/mongodb_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0600 submodules/postgres_exporter/support-files/config/postgres_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0600 submodules/proxysql_exporter/support-files/config/proxysql_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0644 submodules/{node,mysqld,mongodb,postgres,proxysql}_exporter/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
-install -m 0644 submodules/qan-agent/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
+install -m 0644 submodules/{node,mysqld,mongodb,postgres,proxysql}_exporter/support-files/init/ssm-*.conf $RPM_BUILD_ROOT/etc/init/
+install -m 0644 submodules/qan-agent/support-files/init/ssm-*.conf $RPM_BUILD_ROOT/etc/init/
 install -m 0644 submodules/node_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0644 submodules/mysqld_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0644 submodules/mongodb_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
@@ -138,36 +134,13 @@ if [ $1 -gt 1 ] || [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
         done
     fi
 
-    # backup ssm service files under /etc/systemd/system
-    for file in /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service /etc/systemd/system/ssm-{mysql,mongodb}-queries.service; do
-        if ! [ -f "$file" ]; then
-            continue
-        fi
-
-        mv "$file" "${file}.rpmsave"
-    done
-
     # `ssm-admin upgrade` runs `systemctl daemon-reload`
     ssm-admin upgrade
-
-    # copy back ssm service file to /etc/systemd/system because
-    # they are listed in old package's %files section
-    for file in /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.rpmsave /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.rpmsave; do
-        if ! [ -f "$file" ]; then
-            continue
-        fi
-
-        cp "$file" "${file%.rpmsave}"
-    done
 fi
 
-%systemd_post ssm-linux-metrics.service
-%systemd_post ssm-mysql-metrics.service
-%systemd_post ssm-mysql-queries.service
-%systemd_post ssm-mongodb-metrics.service
-%systemd_post ssm-mongodb-queries.service
-%systemd_post ssm-postgresql-metrics.service
-%systemd_post ssm-proxysql-metrics.service
+if [ $1 -eq 1 ]; then
+    initctl reload-configuration || :
+fi
 
 %preun
 # uninstall
@@ -175,31 +148,14 @@ if [ "$1" = "0" ]; then
     ssm-admin uninstall
 fi
 
-%systemd_preun ssm-linux-metrics.service
-%systemd_preun ssm-mysql-metrics.service
-%systemd_preun ssm-mysql-queries.service
-%systemd_preun ssm-mongodb-metrics.service
-%systemd_preun ssm-mongodb-queries.service
-%systemd_preun ssm-postgresql-metrics.service
-%systemd_preun ssm-proxysql-metrics.service
-
 %postun
 # uninstall
 if [ "$1" = "0" ]; then
     rm -rf /opt/ss/ssm-client
     rm -rf /opt/ss/qan-agent
-    rm -f /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.rpmsave
-    rm -f /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.rpmsave
+    initctl reload-configuration || :
     echo "Uninstall complete."
 fi
-
-%systemd_postun ssm-linux-metrics.service
-%systemd_postun ssm-mysql-metrics.service
-%systemd_postun ssm-mysql-queries.service
-%systemd_postun ssm-mongodb-metrics.service
-%systemd_postun ssm-mongodb-queries.service
-%systemd_postun ssm-postgresql-metrics.service
-%systemd_postun ssm-proxysql-metrics.service
 
 %files
 %dir /opt/ss/ssm-client
@@ -209,7 +165,7 @@ fi
 /opt/ss/ssm-client/*
 %config(noreplace) /opt/ss/ssm-client/*.conf
 /opt/ss/qan-agent/bin/*
-%config /lib/systemd/system/ssm-*.service
+%config /etc/init/ssm-*.conf
 /usr/sbin/ssm-admin
 /usr/sbin/pmm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf
