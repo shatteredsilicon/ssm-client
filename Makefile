@@ -23,7 +23,7 @@ $(TARBALL_FILE):
 	mkdir -vp $(shell dirname $(TARBALL_FILE))
 
 	GOTOOLCHAIN=local GO111MODULE=on go mod vendor
-	git submodule update --init --force
+	git submodule update --init
 
 	for submodule_dir in $(shell find $(CURDIR)/submodules -maxdepth 1 -mindepth 1 -type d); do \
 		cd $${submodule_dir}; \
@@ -43,6 +43,7 @@ $(SRPM_FILE): $(TARBALL_FILE)
 	sed -i "s/%{_version}/$(VERSION)/g" "$(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec"
 	sed -i "s/%{_release}/$(RELEASE)/g" "$(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec"
 	cp $(TARBALL_FILE) $(BUILDDIR)/rpmbuild/SOURCES/
+	spectool -C $(BUILDDIR)/rpmbuild/SOURCES/ -g $(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec
 	rpmbuild -bs --define "debug_package %{nil}" --define "_topdir $(BUILDDIR)/rpmbuild" $(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec
 	mv $(BUILDDIR)/rpmbuild/SRPMS/$(shell basename $(SRPM_FILE)) $(SRPM_FILE)
 
@@ -51,7 +52,7 @@ rpm: $(RPM_FILE)
 
 $(RPM_FILE): $(SRPM_FILE)
 	mkdir -vp $(BUILDDIR)/mock $(shell dirname $(RPM_FILE))
-	mock -r ssm-7-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
+	mock -r centos-6-$$(rpm --eval "%{_arch}") --resultdir $(BUILDDIR)/mock --rebuild $(SRPM_FILE)
 	mv $(BUILDDIR)/mock/$(shell basename $(RPM_FILE)) $(RPM_FILE)
 
 .PHONY: sdeb
