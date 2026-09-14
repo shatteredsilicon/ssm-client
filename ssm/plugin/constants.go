@@ -35,7 +35,6 @@ const (
 	ProxySQLMetrics   = "proxysql:metrics"
 	MySQLQueries      = "mysql:queries"
 	MongoDBQueries    = "mongodb:queries"
-	PostgreSQLQueries = "postgresql:queries"
 )
 
 const (

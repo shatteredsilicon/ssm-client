@@ -977,7 +977,6 @@ var svcTypes = []string{
 	plugin.MongoDBMetrics,
 	plugin.MongoDBQueries,
 	plugin.PostgreSQLMetrics,
-	plugin.PostgreSQLQueries,
 	plugin.ProxySQLMetrics,
 }
 
