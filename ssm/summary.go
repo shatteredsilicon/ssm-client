@@ -212,7 +212,7 @@ func (a *Admin) CollectSummary() error {
 	switch service.Platform() {
 	case "linux-upstart":
 		Collectors = append(Collectors, Collector{"Collect service output",
-			[]string{"service", "--status-all"},
+			[]string{"initctl", "list"},
 			filepath.Join(dirname, strings.Join([]string{"sysv_service_", cmdHostname, ".txt"}, ""))})
 	case "linux-systemd":
 		Collectors = append(Collectors, Collector{"Collect systemctl output",
@@ -220,7 +220,7 @@ func (a *Admin) CollectSummary() error {
 			filepath.Join(dirname, strings.Join([]string{"systemd_", cmdHostname, ".txt"}, ""))})
 	case "unix-systemv":
 		Collectors = append(Collectors, Collector{"Collect initctl output",
-			[]string{"initctl", "list"},
+			[]string{"service", "--status-all"},
 			filepath.Join(dirname, strings.Join([]string{"upstart_", cmdHostname, ".txt"}, ""))})
 	case "darwin-launchd":
 		Collectors = append(Collectors, Collector{"Collect LaunchDaemons output",

@@ -17,7 +17,7 @@ BuildRequires:  golang >= 1.23.12
 Obsoletes: pmm-client <= 1.17.5
 Conflicts: pmm-client > 1.17.5
 
-Requires: percona-toolkit
+Requires: percona-toolkit, initscripts, chkconfig
 
 %description
 Shattered Silicon Monitoring (SSM) is an open-source platform for managing and monitoring MySQL and MongoDB
@@ -55,7 +55,7 @@ install -m 0755 %{_GOPATH}/bin/ssm-client $RPM_BUILD_ROOT/usr/sbin/pmm-admin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/qan-agent/bin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector
-install -m 0755 -d $RPM_BUILD_ROOT/etc/init/
+install -m 0755 -d $RPM_BUILD_ROOT/etc/init.d/
 install -m 0755 -d $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0755 -d $RPM_BUILD_ROOT/etc/logrotate.d/
 install -m 0755 %{_GOPATH}/bin/node_exporter $RPM_BUILD_ROOT/opt/ss/ssm-client/
@@ -72,8 +72,8 @@ install -m 0600 submodules/mysqld_exporter/support-files/config/mysqld_exporter.
 install -m 0600 submodules/mongodb_exporter/support-files/config/mongodb_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0600 submodules/postgres_exporter/support-files/config/postgres_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
 install -m 0600 submodules/proxysql_exporter/support-files/config/proxysql_exporter.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0644 submodules/{node,mysqld,mongodb,postgres,proxysql}_exporter/support-files/init/ssm-*.conf $RPM_BUILD_ROOT/etc/init/
-install -m 0644 submodules/qan-agent/support-files/init/ssm-*.conf $RPM_BUILD_ROOT/etc/init/
+install -m 0755 submodules/{node,mysqld,mongodb,postgres,proxysql}_exporter/support-files/init.d/ssm-* $RPM_BUILD_ROOT/etc/init.d/
+install -m 0755 submodules/qan-agent/support-files/init.d/ssm-* $RPM_BUILD_ROOT/etc/init.d/
 install -m 0644 submodules/node_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0644 submodules/mysqld_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
 install -m 0644 submodules/mongodb_exporter/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
@@ -139,13 +139,18 @@ if [ $1 -gt 1 ] || [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
 fi
 
 if [ $1 -eq 1 ]; then
-    initctl reload-configuration || :
+    for service in /etc/init.d/ssm-*; do
+        /sbin/chkconfig --add "${service#/etc/init.d/}" || :
+    done
 fi
 
 %preun
 # uninstall
 if [ "$1" = "0" ]; then
     ssm-admin uninstall
+    for service in /etc/init.d/ssm-*; do
+        /sbin/chkconfig --del "${service#/etc/init.d/}" || :
+    done
 fi
 
 %postun
@@ -153,7 +158,6 @@ fi
 if [ "$1" = "0" ]; then
     rm -rf /opt/ss/ssm-client
     rm -rf /opt/ss/qan-agent
-    initctl reload-configuration || :
     echo "Uninstall complete."
 fi
 
@@ -165,7 +169,7 @@ fi
 /opt/ss/ssm-client/*
 %config(noreplace) /opt/ss/ssm-client/*.conf
 /opt/ss/qan-agent/bin/*
-%config /etc/init/ssm-*.conf
+%config /etc/init.d/ssm-*
 /usr/sbin/ssm-admin
 /usr/sbin/pmm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf

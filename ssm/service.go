@@ -36,6 +36,13 @@ func init() {
 			return &dummyService{}, nil
 		}
 	}
+
+	for _, sys := range service.AvailableSystems() {
+		if sys.String() == "unix-systemv" || sys.String() == "sysv" {
+			service.ChooseSystem(sys)
+			break
+		}
+	}
 }
 
 type dummyService struct {
@@ -152,7 +159,7 @@ func enableService(name string) error {
 	case systemdPlatform:
 		return exec.Command("systemctl", "enable", name).Run()
 	case systemvPlatform:
-		return exec.Command("update-rc.d", "-f", name, "defaults").Run()
+		return exec.Command("chkconfig", name, "on").Run()
 	default:
 		return nil
 	}
@@ -163,7 +170,7 @@ func disableService(name string) error {
 	case systemdPlatform:
 		return exec.Command("systemctl", "disable", name).Run()
 	case systemvPlatform:
-		return exec.Command("update-rc.d", "-f", name, "remove").Run()
+		return exec.Command("chkconfig", name, "off").Run()
 	default:
 		return nil
 	}

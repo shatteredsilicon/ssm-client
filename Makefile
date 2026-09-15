@@ -1,6 +1,6 @@
 BUILDDIR	?= /tmp/ssmbuild
 VERSION		?=
-RELEASE		?= 1
+RELEASE		?= 2
 
 .PHONY: all
 all:

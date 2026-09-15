@@ -784,6 +784,7 @@ func serviceTypeInName(serviceType string) string {
 // they have higher priority
 func GetLocalServices(serviceTypes ...string) (services []localService) {
 	dir, extension := GetServiceDirAndExtension()
+	dir, _ = filepath.EvalSymlinks(dir)
 
 	serviceMap := make(map[string]localService)
 	serviceRegex := regexp.MustCompile(`^(ssm|pmm)-([^-]+-[^-]+)(-\d+)?$`)
