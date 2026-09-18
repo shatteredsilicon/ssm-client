@@ -134,15 +134,13 @@ if [ $1 -gt 1 ] || [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
         done
     fi
 
-    # `ssm-admin upgrade` runs `systemctl daemon-reload`
+    # `ssm-admin upgrade` runs `systemctl daemon-reload` if it's in use of systemd
     ssm-admin upgrade
 fi
 
-if [ $1 -eq 1 ]; then
-    for service in /etc/init.d/ssm-*; do
-        /sbin/chkconfig --add "${service#/etc/init.d/}" || :
-    done
-fi
+for service in /etc/init.d/ssm-*; do
+    /sbin/chkconfig --add "${service#/etc/init.d/}" || :
+done
 
 %preun
 # uninstall
