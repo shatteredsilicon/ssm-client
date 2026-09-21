@@ -38,7 +38,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -74,7 +73,7 @@ type Admin struct {
 	//promSeriesAPI prometheus.SeriesAPI
 }
 
-// SetAPI setups QAN, Consul, Prometheus, pmm-managed clients and verifies connections.
+// SetAPI setups QAN, Consul, Prometheus, ssm-managed clients and verifies connections.
 func (a *Admin) SetAPI() error {
 	// Set default API timeout if unset.
 	if a.apiTimeout == 0 {
@@ -573,13 +572,6 @@ func (a *Admin) CheckInstallation() (upgradeRequired bool, orphanedServices, mis
 	localServices := GetLocalServices()
 	activeServices := GetLocalActiveServices()
 
-	for _, svc := range localServices {
-		if svc.isV1Service() {
-			upgradeRequired = true
-			break
-		}
-	}
-
 	// check if there are new config files
 	// needed migration
 	for _, exporter := range exporterList {
@@ -764,14 +756,6 @@ type localService struct {
 	filePath    string
 }
 
-func (svc localService) isPMMService() bool {
-	return strings.HasPrefix(svc.serviceName, "pmm-")
-}
-
-func (svc localService) isV1Service() bool {
-	return strings.Count(svc.serviceName, "-") == 3
-}
-
 func (svc localService) isQueries() bool {
 	return strings.HasSuffix(svc.serviceType, ":queries")
 }
@@ -780,14 +764,12 @@ func serviceTypeInName(serviceType string) string {
 	return strings.Replace(serviceType, ":", "-", 1)
 }
 
-// GetLocalServices finds any local SSM/PMM services
-// If v1 service files (those files with '-port' suffix) exists,
-// they have higher priority
+// GetLocalServices finds any local SSM services
 func GetLocalServices(serviceTypes ...string) (services []localService) {
 	dir, extension := GetServiceDirAndExtension()
 
 	serviceMap := make(map[string]localService)
-	serviceRegex := regexp.MustCompile(`^(ssm|pmm)-([^-]+-[^-]+)(-\d+)?$`)
+	serviceRegex := regexp.MustCompile(`^ssm-([^-]+-[^-]+)$`)
 	walkFunc := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -811,8 +793,8 @@ func GetLocalServices(serviceTypes ...string) (services []localService) {
 			return nil
 		}
 
-		serviceType := strings.Replace(parts[2], "-", ":", 1)
-		if _, ok := serviceMap[serviceType]; !ok || parts[3] != "" {
+		serviceType := strings.Replace(parts[1], "-", ":", 1)
+		if _, ok := serviceMap[serviceType]; !ok {
 			serviceMap[serviceType] = localService{
 				serviceType: serviceType,
 				serviceName: name,
@@ -1050,32 +1032,6 @@ func (a *Admin) Upgrade() (err error) {
 		isRunning := getServiceStatus(svc.serviceName)
 		svcName := serviceName(svc.serviceType)
 
-		if svc.isV1Service() && !svc.isQueries() {
-			switch service.Platform() {
-			case systemdPlatform:
-				err = a.reconfigureFromSytemd(svc)
-				if err != nil {
-					return err
-				}
-			case systemvPlatform:
-				err = a.reconfigureFromSystemv(svc)
-				if err != nil {
-					return err
-				}
-			case upstartPlatform:
-				err = a.reconfigureFromUpstart(svc)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		if svc.isV1Service() {
-			if err = uninstallService(svc.serviceName); err != nil {
-				return err
-			}
-		}
-
 		if !isRunning {
 			continue
 		}
@@ -1086,159 +1042,6 @@ func (a *Admin) Upgrade() (err error) {
 	}
 
 	return nil
-}
-
-func (a *Admin) reconfigureFromSytemd(svc localService) error {
-	upgradeSvcName := upgradeServiceName(svc.serviceType)
-	upgradeSvcFilePath := path.Join(systemdDir, upgradeSvcName+systemdExtension)
-
-	err := exec.Command("cp", svc.filePath, upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	unitFile, err := ini.ShadowLoad(upgradeSvcFilePath)
-	if err != nil {
-		return err
-	}
-
-	if !unitFile.HasSection("Service") {
-		return nil
-	}
-
-	// the ini.ShadowLoad method removes the double quotes around
-	// environemnt variables, we need those double quotes back.
-	envStrs := unitFile.Section("Service").Key("Environment").ValueWithShadows()
-	unitFile.Section("Service").DeleteKey("Environment")
-	for _, envStr := range envStrs {
-		unitFile.Section("Service").Key("Environment").AddShadow(strconv.Quote(envStr))
-	}
-
-	err = unitFile.Section("Service").Key("Environment").AddShadow("ON_CONFIGURE=1")
-	if err != nil {
-		return err
-	}
-
-	unitFile.Section("Service").Key("Restart").SetValue("no")
-	if err = unitFile.SaveTo(upgradeSvcFilePath); err != nil {
-		return err
-	}
-
-	if err = a.replacePMMDir(svc, upgradeSvcFilePath); err != nil {
-		return err
-	}
-
-	err = restartService(upgradeSvcName)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < 100; i++ {
-		time.Sleep(50 * time.Millisecond)
-		if !getServiceStatus(upgradeSvcName) {
-			break
-		}
-	}
-
-	if err = uninstallService(upgradeSvcName); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *Admin) reconfigureFromSystemv(svc localService) error {
-	upgradeSvcName := upgradeServiceName(svc.serviceType)
-	upgradeSvcFilePath := path.Join(systemvDir, upgradeSvcName+systemvExtension)
-
-	err := exec.Command("cp", svc.filePath, upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	err = exec.Command("sed", "-i", "1 i export ON_CONFIGURE=1", upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	if err = a.replacePMMDir(svc, upgradeSvcFilePath); err != nil {
-		return err
-	}
-
-	err = restartService(upgradeSvcName)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < 100; i++ {
-		time.Sleep(50 * time.Millisecond)
-		if !getServiceStatus(upgradeSvcName) {
-			break
-		}
-	}
-
-	if err = uninstallService(upgradeSvcName); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *Admin) reconfigureFromUpstart(svc localService) error {
-	upgradeSvcName := upgradeServiceName(svc.serviceType)
-	upgradeSvcFilePath := path.Join(upstartDir, upgradeSvcName+upstartExtension)
-
-	err := exec.Command("cp", svc.filePath, upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	err = exec.Command("sed", "-i", "1 i env ON_CONFIGURE=1", upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	err = exec.Command("sed", "-i", "s/\\(start[[:space:]]+on[[:space:]]+stopped\\)/# \\1/g", upgradeSvcFilePath).Run()
-	if err != nil {
-		return err
-	}
-
-	if err = a.replacePMMDir(svc, upgradeSvcFilePath); err != nil {
-		return err
-	}
-
-	err = restartService(upgradeSvcName)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < 100; i++ {
-		time.Sleep(50 * time.Millisecond)
-		if !getServiceStatus(upgradeSvcName) {
-			break
-		}
-	}
-
-	if err = uninstallService(upgradeSvcName); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *Admin) replacePMMDir(svc localService, serviceFilePath string) error {
-	if !svc.isPMMService() {
-		return nil
-	}
-	return exec.Command(
-		"sed",
-		"-i",
-		fmt.Sprintf("s/%s/%s/g",
-			strings.Replace(PMMBaseDir, "/", "\\/", -1),
-			strings.Replace(SSMBaseDir, "/", "\\/", -1),
-		),
-		serviceFilePath,
-	).Run()
 }
 
 func (a *Admin) migrateExporterConfigs() error {

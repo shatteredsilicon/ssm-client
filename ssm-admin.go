@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,11 +73,6 @@ var (
 				// You should always be able to get help even if ssm.is not configured yet.
 				return
 			case "uninstall":
-				if filepath.Base(os.Args[0]) == "pmm-admin" {
-					// Do nothing if it's "pmm-admin uninstall", to
-					// fit upgrading from PMM
-					os.Exit(0)
-				}
 				return
 			case "summary":
 				return

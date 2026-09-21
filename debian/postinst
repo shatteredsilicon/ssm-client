@@ -41,16 +41,6 @@ if [ "$1" == "configure" ] && [ -z "$2" ]; then
 
 # upgrade
 elif [ "$1" == "configure" ]; then
-    # Upgrade from PMM
-    if [ -f /opt/ss/percona/pmm-client/pmm.yml ]; then
-        cp -n /opt/ss/percona/pmm-client/pmm.yml /opt/ss/ssm-client/ssm.yml
-    fi
-    if [ -f /opt/ss/percona/pmm-client/server.crt ]; then
-        cp -n /opt/ss/percona/pmm-client/server.crt /opt/ss/ssm-client/server.crt
-    fi
-    if [ -f /opt/ss/percona/pmm-client/server.key ]; then
-        cp -n /opt/ss/percona/pmm-client/server.key /opt/ss/ssm-client/server.key
-    fi
     if [ -d /opt/ss/percona/qan-agent ] && [ ! -f /opt/ss/qan-agent/config/agent.conf ]; then
         find /opt/ss/percona/qan-agent -maxdepth 1 ! -path /opt/ss/percona/qan-agent ! -name bin -exec cp -r "{}" /opt/ss/qan-agent/ \;
     fi

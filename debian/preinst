@@ -1,16 +1,5 @@
 #!/bin/bash
 
-if [ -d /usr/local/percona/ ]; then
-    if ! [ -d /opt/ss ]; then
-        mkdir -p /opt/ss
-    fi
-    cp -r /usr/local/percona /opt/ss/
-    # mv config file of PMM so the uninstall process won't delete server data
-    if [ -f /usr/local/percona/pmm-client/pmm.yml ]; then
-        mv /usr/local/percona/pmm-client/pmm.yml /tmp/
-    fi
-fi
-
 # Upgrade
 if [ "$1" == "upgrade" ] && [ -n "$2" ]; then
     # save old version, so we can know what's the last version that

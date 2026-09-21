@@ -11,12 +11,12 @@ import (
 var _ plugin.Queries = (*Queries)(nil)
 
 // New returns *Queries.
-func New(queriesFlags plugin.QueriesFlags, dsn string, args []string, pmmBaseDir string) *Queries {
+func New(queriesFlags plugin.QueriesFlags, dsn string, args []string, baseDir string) *Queries {
 	return &Queries{
 		queriesFlags: queriesFlags,
 		dsn:          dsn,
 		args:         args,
-		pmmBaseDir:   pmmBaseDir,
+		baseDir:      baseDir,
 	}
 }
 
@@ -25,12 +25,12 @@ type Queries struct {
 	queriesFlags plugin.QueriesFlags
 	dsn          string
 	args         []string
-	pmmBaseDir   string
+	baseDir      string
 }
 
 // Init initializes plugin.
 func (q *Queries) Init(ctx context.Context, ssmUserPassword string, _ *plugin.Info) (*plugin.Info, error) {
-	info, err := mongodb.Init(ctx, q.dsn, q.args, q.pmmBaseDir)
+	info, err := mongodb.Init(ctx, q.dsn, q.args, q.baseDir)
 	if err != nil {
 		return nil, err
 	}

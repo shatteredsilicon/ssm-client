@@ -17,7 +17,7 @@
 
 package managed
 
-// Copied from pmm-managed Swagger code.
+// Copied from ssm-managed Swagger code.
 
 type APIBasicAuth struct {
 	// username
@@ -122,7 +122,7 @@ type APIScrapeConfigsCreateRequest struct {
 	// scrape config
 	ScrapeConfig *APIScrapeConfig `json:"scrape_config,omitempty"`
 
-	// Check that added targets can be scraped from PMM Server
+	// Check that added targets can be scraped from SSM Server
 	CheckReachability bool `json:"check_reachability,omitempty"`
 }
 
@@ -130,7 +130,7 @@ type APIScrapeConfigsUpdateRequest struct {
 	// scrape config
 	ScrapeConfig *APIScrapeConfig `json:"scrape_config,omitempty"`
 
-	// Check that added targets can be scraped from PMM Server
+	// Check that added targets can be scraped from SSM Server
 	CheckReachability bool `json:"check_reachability,omitempty"`
 }
 

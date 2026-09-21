@@ -35,15 +35,14 @@ const (
 )
 
 var (
-	// you can use `-ldflags -X github.com/shatteredsilicon/ssm-client/pmm.Version=`
+	// you can use `-ldflags -X github.com/shatteredsilicon/ssm-client/ssm.Version=`
 	// to set build version number
 	Version = "X"
 
-	// you can use `-ldflags -X github.com/shatteredsilicon/ssm-client/pmm.RootDir=`
+	// you can use `-ldflags -X github.com/shatteredsilicon/ssm-client/ssm.RootDir=`
 	// to set root filesystem for ssm-admin
 	RootDir = ""
 
-	PMMBaseDir   = "/usr/local/percona/pmm-client"
 	SSMBaseDir   = RootDir + "/opt/ss/ssm-client"
 	AgentBaseDir = RootDir + "/opt/ss/qan-agent"
 
