@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin/mysql"
+	"github.com/shatteredsilicon/ssm-client/ssm/utils"
 	pc "github.com/shatteredsilicon/ssm/proto/config"
 )
 
@@ -49,11 +51,11 @@ func (q *Queries) Init(ctx context.Context, ssmUserPassword string, info *plugin
 		}
 	}
 
-	if q.flags.QuerySource == "auto" {
+	if utils.SliceContains(strings.Split(q.flags.QuerySource, ","), "auto") {
 		// MySQL is local if the server hostname == MySQL hostname.
 		osHostname, _ := os.Hostname()
 		if osHostname == info.Hostname {
-			q.flags.QuerySource = "slowlog"
+			q.flags.QuerySource = "slowlog,perfschema"
 		} else {
 			q.flags.QuerySource = "perfschema"
 		}
