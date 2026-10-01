@@ -13,5 +13,11 @@ if [ "$1" = "remove" ]; then
     rm -f /etc/init.d/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.conf
     rm -f /etc/init.d/ssm-{mysql,mongodb}-queries.conf
     rm -f /etc/init.d/ssm-mysql-tuning.conf
+
+    if getent passwd ssm > /dev/null 2>&1; then
+        userdel ssm > /dev/null 2>&1
+        groupdel ssm > /dev/null 2>&1 || true
+    fi
+
     echo "Uninstall complete."
 fi

@@ -16,6 +16,7 @@ BuildRequires:  glibc-devel, glibc-static, golang >= 1.24, unzip, gzip, make, pe
 
 Requires: percona-toolkit
 
+Requires(pre):      shadow-utils
 Requires(post):     systemd
 Requires(preun):    systemd
 Requires(postun):   systemd
@@ -89,6 +90,9 @@ install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld
 rm -rf $RPM_BUILD_ROOT
 
 %pre
+getent group ssm >/dev/null || groupadd --gid 551 -r ssm
+getent passwd ssm >/dev/null || useradd --uid 551 -M -r -g ssm -d /opt/ss -s /bin/false -c 'SSM User' ssm
+
 if [ $1 -gt 1 ]; then
     # save old version, so we can know what's the last version that
     # it upgraded from later
@@ -98,6 +102,10 @@ if [ $1 -gt 1 ]; then
 fi
 
 %post
+if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss" ]; then
+    chown -R ssm:ssm /opt/ss
+fi
+
 # Upgrade
 if [ $1 -gt 1 ]; then
     if [ -d /usr/local/percona/qan-agent ] && [ ! -f /opt/ss/qan-agent/config/agent.conf ]; then
@@ -177,6 +185,12 @@ if [ "$1" = "0" ]; then
     rm -f /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.rpmsave
     rm -f /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.rpmsave
     rm -f /etc/systemd/system/ssm-mysql-tuning.service.rpmsave
+
+    if getent passwd ssm > /dev/null 2>&1; then
+        userdel ssm > /dev/null 2>&1
+        groupdel ssm > /dev/null 2>&1 || true
+    fi
+
     echo "Uninstall complete."
 fi
 
@@ -190,13 +204,9 @@ fi
 %systemd_postun ssm-proxysql-metrics.service
 
 %files
-%dir /opt/ss/ssm-client
-%dir /opt/ss/ssm-client/textfile-collector
-%dir /opt/ss/qan-agent/bin
-/opt/ss/ssm-client/textfile-collector/*
-/opt/ss/ssm-client/*
 %config(noreplace) /opt/ss/ssm-client/*.conf
-/opt/ss/qan-agent/bin/*
+%attr(0660,ssm,ssm) %ghost /opt/ss/ssm-client/ssm.yml
+%attr(-,ssm,ssm) /opt/ss
 %config /lib/systemd/system/ssm-*.service
 /usr/sbin/ssm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf

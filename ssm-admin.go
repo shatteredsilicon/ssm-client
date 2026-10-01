@@ -1738,6 +1738,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&ssm.ConfigFile, "config-file", "c", ssm.ConfigFile, "SSM config file")
 	rootCmd.PersistentFlags().BoolVarP(&admin.Verbose, "verbose", "", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&admin.SkipAdmin, "skip-root", "", false, "skip UID check (experimental)")
+	rootCmd.PersistentFlags().Uint32VarP(&admin.UID, "uid", "", 551, "SSM User ID")
+	rootCmd.PersistentFlags().Uint32VarP(&admin.GID, "gid", "", 551, "SSM Group ID")
 	rootCmd.Flags().BoolVarP(&flagVersion, "version", "v", false, "show version")
 	rootCmd.PersistentFlags().DurationVar(&flagTimeout, "timeout", 5*time.Second, "timeout")
 

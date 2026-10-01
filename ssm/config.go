@@ -321,7 +321,15 @@ What ports to map you can find from "ssm-admin check-network" output once you ad
 // writeConfig write config to the file.
 func (a *Admin) writeConfig() error {
 	bytes, _ := yaml.Marshal(a.Config)
-	return ioutil.WriteFile(ConfigFile, bytes, 0600)
+	if err := os.WriteFile(ConfigFile, bytes, 0600); err != nil {
+		return err
+	}
+
+	if !a.SkipAdmin {
+		return os.Chown(ConfigFile, int(a.UID), int(a.GID))
+	}
+
+	return nil
 }
 
 // removeConfig remove config file
@@ -346,7 +354,15 @@ func (a *Admin) syncAgentConfig(agentConfigFile string) error {
 	agentConf.ServerPassword = a.Config.ServerPassword
 
 	bytes, _ := json.Marshal(agentConf)
-	return ioutil.WriteFile(agentConfigFile, bytes, 0600)
+	if err := os.WriteFile(agentConfigFile, bytes, 0600); err != nil {
+		return err
+	}
+
+	if !a.SkipAdmin {
+		return os.Chown(ConfigFile, int(a.UID), int(a.GID))
+	}
+
+	return nil
 }
 
 // getNginxHeader get header value from Nginx response.
@@ -491,8 +507,13 @@ func (a *Admin) renameInstance(instanceUUID, oldName, newName string) error {
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(fmt.Sprintf("%s/instance/%s.json", AgentBaseDir, instanceUUID), newBytes, 0600); err != nil {
+	instanceFile := fmt.Sprintf("%s/instance/%s.json", AgentBaseDir, instanceUUID)
+	if err := ioutil.WriteFile(instanceFile, newBytes, 0600); err != nil {
 		return err
+	}
+
+	if !a.SkipAdmin {
+		return os.Chown(instanceFile, int(a.UID), int(a.GID))
 	}
 
 	return nil
