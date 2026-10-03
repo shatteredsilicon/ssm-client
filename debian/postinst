@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss" ]; then
+    chown -R ssm:ssm /opt/ss
+fi
+
 # check init system
 if [ -d "/run/systemd/system" ]; then
     for file in /opt/ss/ssm-client/systemd/*; do

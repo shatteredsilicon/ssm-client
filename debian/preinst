@@ -1,5 +1,8 @@
 #!/bin/bash
 
+getent group ssm >/dev/null || addgroup --system --gid 551 ssm
+getent passwd ssm >/dev/null || adduser --system --uid 551 --gecos "SSM User" --ingroup ssm --home /opt/ss --no-create-home --disabled-login --disabled-password ssm
+
 # Upgrade
 if [ "$1" == "upgrade" ] && [ -n "$2" ]; then
     # save old version, so we can know what's the last version that

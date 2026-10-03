@@ -63,6 +63,8 @@ type Admin struct {
 	Config       *Config
 	Verbose      bool
 	SkipAdmin    bool
+	UID          uint32
+	GID          uint32
 	Format       string
 	serverURL    string
 	apiTimeout   time.Duration
@@ -537,7 +539,19 @@ func (a *Admin) checkSSLCertificate() error {
 	}
 
 	// Generate SSL cert and key.
-	return generateSSLCertificate(a.Config.ClientAddress, SSLCertFile, SSLKeyFile)
+	if err := generateSSLCertificate(a.Config.ClientAddress, SSLCertFile, SSLKeyFile); err != nil {
+		return err
+	}
+
+	if !a.SkipAdmin {
+		if err := os.Chown(SSLCertFile, int(a.UID), int(a.GID)); err != nil {
+			return err
+		}
+
+		return os.Chown(SSLKeyFile, int(a.UID), int(a.GID))
+	}
+
+	return nil
 }
 
 // CheckVersion check server and client versions and returns boolean and error; boolean is true if error is fatal.

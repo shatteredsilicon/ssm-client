@@ -28,6 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	consul "github.com/hashicorp/consul/api"
@@ -150,8 +151,15 @@ func (a *Admin) AddQueries(ctx context.Context, q plugin.Queries, prevInfo *plug
 	// Write instance config for qan-agent with real DSN.
 	instance.DSN = info.DSN
 	bytes, _ := json.MarshalIndent(instance, "", "    ")
-	if err := ioutil.WriteFile(fmt.Sprintf("%s/instance/%s.json", AgentBaseDir, instance.UUID), bytes, 0600); err != nil {
+	instanceFile := fmt.Sprintf("%s/instance/%s.json", AgentBaseDir, instance.UUID)
+	if err := ioutil.WriteFile(instanceFile, bytes, 0600); err != nil {
 		return nil, err
+	}
+
+	if !a.SkipAdmin {
+		if err := os.Chown(instanceFile, int(a.UID), int(a.GID)); err != nil {
+			return nil, err
+		}
 	}
 
 	// Ensure qan-agent is started if service exists, otherwise it won't be enabled for QAN.
@@ -501,7 +509,16 @@ func (a *Admin) registerAgent(extraArgs ...string) error {
 	}
 	args = append(args, extraArgs...)
 	args = append(args, fmt.Sprintf("%s/%s", a.serverURL, qanAPIBasePath))
-	if _, err := exec.Command(path, args...).Output(); err != nil {
+
+	cmd := exec.Command(path, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{
+			Uid: a.UID,
+			Gid: a.GID,
+		},
+	}
+
+	if _, err := cmd.Output(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return fmt.Errorf("problem with agent registration on QAN API: %s\n%s", err, exitErr.Stderr)
 		}

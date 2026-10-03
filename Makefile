@@ -36,7 +36,7 @@ $(TARBALL_FILE):
 srpm: $(SRPM_FILE)
 
 $(SRPM_FILE): $(TARBALL_FILE)
-	mkdir -vp $(BUILDDIR)/rpmbuild/{SOURCES,SPECS,BUILD,SRPMS,RPMS}
+	mkdir -vp $(addprefix $(BUILDDIR)/rpmbuild/, SOURCES SPECS BUILD SRPMS RPMS)
 	mkdir -vp $(shell dirname $(SRPM_FILE))
 
 	cp ssm-client.spec $(BUILDDIR)/rpmbuild/SPECS/ssm-client.spec
