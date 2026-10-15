@@ -233,6 +233,7 @@ func (a *Admin) List() error {
 func (a *Admin) getSVCTable(node *consul.CatalogNode) []ServiceStatus {
 	// Parse all services except mysql:queries.
 	var queryServices []*consul.AgentService
+	var agentServices []*consul.AgentService
 	var svcTable []ServiceStatus
 	for _, svc := range node.Services {
 		// When server hostname == client name, we have to exclude consul.
@@ -242,13 +243,14 @@ func (a *Admin) getSVCTable(node *consul.CatalogNode) []ServiceStatus {
 		if strings.HasSuffix(svc.Service, ":queries") {
 			queryServices = append(queryServices, svc)
 			continue
+		} else if strings.HasSuffix(svc.Service, ":agent") {
+			agentServices = append(agentServices, svc)
+			continue
 		}
 
 		uninitMetrics := uninitializedMetrics[svc.Service]
 
-		typeInName := serviceTypeInName(svc.Service)
-		status := getServiceStatus(fmt.Sprintf("ssm-%s-%d", typeInName, svc.Port)) ||
-			getServiceStatus(serviceName(svc.Service))
+		status := getServiceStatus(serviceName(svc.Service))
 
 		opts := []string{}
 		name := "-"
@@ -302,9 +304,7 @@ func (a *Admin) getSVCTable(node *consul.CatalogNode) []ServiceStatus {
 
 	// Parse queries service.
 	for _, queryService := range queryServices {
-		typeInName := serviceTypeInName(queryService.Service)
-		status := getServiceStatus(fmt.Sprintf("ssm-%s-%d", typeInName, queryService.Port)) ||
-			getServiceStatus(serviceName(queryService.Service))
+		status := getServiceStatus(serviceName(queryService.Service))
 
 		// Get names from Consul tags.
 		names := []string{}
@@ -349,6 +349,41 @@ func (a *Admin) getSVCTable(node *consul.CatalogNode) []ServiceStatus {
 			}
 			svcTable = append(svcTable, row)
 		}
+	}
+
+	for _, agentService := range agentServices {
+		status := getServiceStatus(serviceName(agentService.Service))
+
+		opts := []string{}
+		name := "-"
+
+		// Parse Consul service tags.
+		for _, tag := range agentService.Tags {
+			if strings.HasPrefix(tag, "alias_") {
+				name = tag[6:]
+				break
+			}
+		}
+
+		uninitAgent := uninitializedAgents[agentService.Service]
+		// Get custom options
+		if uninitAgent != nil {
+			if customOpts, err := uninitAgent.CustomOptions(); err == nil {
+				for k, v := range customOpts {
+					opts = append(opts, fmt.Sprintf("%s=%s", k, v))
+				}
+			}
+		}
+
+		row := ServiceStatus{
+			Type:    agentService.Service,
+			Name:    name,
+			Port:    "-",
+			Running: status,
+			DSN:     "-",
+			Options: strings.Join(opts, ", "),
+		}
+		svcTable = append(svcTable, row)
 	}
 
 	return svcTable

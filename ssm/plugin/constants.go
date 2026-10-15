@@ -36,8 +36,19 @@ const (
 	MongoDBQueries    = "mongodb:queries"
 	PostgreSQLQueries = "postgresql:queries"
 	MySQLTuning       = "mysql:tuning"
+	ToolAgent         = "tool:agent"
 )
 
 const (
 	SSMUsername = "ssm"
+)
+
+var (
+	ToolAgentRelatedServices = []string{
+		LinuxMetrics,
+		MySQLMetrics,
+		MongoDBMetrics,
+		MySQLQueries,
+		MongoDBQueries,
+	}
 )

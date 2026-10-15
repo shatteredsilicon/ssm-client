@@ -11,12 +11,13 @@ import (
 var _ plugin.Queries = (*Queries)(nil)
 
 // New returns *Queries.
-func New(queriesFlags plugin.QueriesFlags, dsn string, args []string, baseDir string) *Queries {
+func New(queriesFlags plugin.QueriesFlags, dsn string, args []string, ssmBaseDir, toolAgentDir string) *Queries {
 	return &Queries{
 		queriesFlags: queriesFlags,
 		dsn:          dsn,
 		args:         args,
-		baseDir:      baseDir,
+		ssmBaseDir:   ssmBaseDir,
+		toolAgentDir: toolAgentDir,
 	}
 }
 
@@ -25,12 +26,13 @@ type Queries struct {
 	queriesFlags plugin.QueriesFlags
 	dsn          string
 	args         []string
-	baseDir      string
+	ssmBaseDir   string
+	toolAgentDir string
 }
 
 // Init initializes plugin.
 func (q *Queries) Init(ctx context.Context, ssmUserPassword string, _ *plugin.Info) (*plugin.Info, error) {
-	info, err := mongodb.Init(ctx, q.dsn, q.args, q.baseDir)
+	info, err := mongodb.Init(ctx, q.dsn, q.args, q.ssmBaseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -56,4 +58,9 @@ func (q Queries) Config() pc.QAN {
 		ExampleQueries:   &exampleQueries,
 		PrefetchMetadata: &q.queriesFlags.PrefetchMetadata,
 	}
+}
+
+// Agents returns agents that are associated to the exporter
+func (q Queries) Agents() ([]plugin.Agent, error) {
+	return mongodb.Agents(q.toolAgentDir, q.dsn)
 }

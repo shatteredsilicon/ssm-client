@@ -16,22 +16,24 @@ import (
 var _ plugin.Metrics = (*Metrics)(nil)
 
 // New returns *Metrics.
-func New(dsn string, args []string, cluster string, ssmBaseDir string) *Metrics {
+func New(dsn string, args []string, cluster string, ssmBaseDir, toolAgentDir string) *Metrics {
 	return &Metrics{
-		dsn:        dsn,
-		args:       args,
-		cluster:    cluster,
-		ssmBaseDir: ssmBaseDir,
+		dsn:          dsn,
+		args:         args,
+		cluster:      cluster,
+		ssmBaseDir:   ssmBaseDir,
+		toolAgentDir: toolAgentDir,
 	}
 }
 
 // Metrics implements plugin.Metrics.
 type Metrics struct {
-	dsn        string
-	args       []string
-	cluster    string
-	ssmBaseDir string
-	port       int
+	dsn          string
+	args         []string
+	cluster      string
+	ssmBaseDir   string
+	toolAgentDir string
+	port         int
 }
 
 // Init initializes plugin.
@@ -108,4 +110,9 @@ func (m Metrics) Cluster() string {
 // CustomOptions returns key-value map of custom options that are applied
 func (m Metrics) CustomOptions() (map[string]string, error) {
 	return nil, nil
+}
+
+// Agents returns agents that are associated to the exporter
+func (m Metrics) Agents() ([]plugin.Agent, error) {
+	return mongodb.Agents(m.toolAgentDir, m.dsn)
 }

@@ -28,7 +28,10 @@ import (
 )
 
 var uninitializedMetrics = map[string]plugin.Metrics{
-	plugin.MySQLMetrics: mysqlMetrics.New(mysqlMetrics.Flags{}, mysql.Flags{}, SSMBaseDir),
+	plugin.MySQLMetrics: mysqlMetrics.New(mysqlMetrics.Flags{}, mysql.Flags{}, SSMBaseDir, ToolAgentBaseDir),
+}
+var uninitializedAgents = map[string]plugin.Agent{
+	plugin.ToolAgent: plugin.NewToolAgent(ToolAgentBaseDir, nil),
 }
 
 // AddMetrics add metrics service to monitoring.
@@ -58,11 +61,29 @@ func (a *Admin) AddMetrics(ctx context.Context, m plugin.Metrics, force bool, di
 
 	serviceType := fmt.Sprintf("%s:metrics", m.Name())
 
+	addAgentFunc := func() error {
+		if agents, err := m.Agents(); err != nil {
+			return err
+		} else if len(agents) > 0 {
+			for _, agent := range agents {
+				if err := a.AddAgent(ctx, agent); err != nil {
+					return err
+				}
+				info.Agents = append(info.Agents, fmt.Sprintf("%s:agent", agent.Name()))
+			}
+		}
+
+		return nil
+	}
+
 	consulSvc, err := a.getConsulService(serviceType, "")
 	if err != nil {
 		return nil, err
 	}
 	if consulSvc != nil {
+		if err = addAgentFunc(); err != nil {
+			return nil, err
+		}
 		return info, ErrDuplicate
 	}
 
@@ -128,6 +149,10 @@ func (a *Admin) AddMetrics(ctx context.Context, m plugin.Metrics, force bool, di
 	}
 
 	if err := enableService(serviceName(serviceType)); err != nil {
+		return nil, err
+	}
+
+	if err := addAgentFunc(); err != nil {
 		return nil, err
 	}
 

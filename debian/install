@@ -5,6 +5,8 @@ postgres_exporter /opt/ss/ssm-client/
 mongodb_exporter /opt/ss/ssm-client/
 proxysql_exporter /opt/ss/ssm-client/
 mt-agent /opt/ss/ssm-client/
+tool-agent /opt/ss/tool-agent/
+tool-agent.conf /opt/ss/tool-agent/
 ssm-qan-agent /opt/ss/qan-agent/bin/
 ssm-qan-agent-installer /opt/ss/qan-agent/bin/
 queries-mysqld.yml /opt/ss/ssm-client/

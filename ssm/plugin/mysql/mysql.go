@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
+	"path"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/go-sql-driver/mysql"
 	"github.com/percona/go-mysql/dsn"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
 	"github.com/shatteredsilicon/ssm-client/ssm/utils"
@@ -23,6 +26,7 @@ type Flags struct {
 	Host         string
 	Port         string
 	Socket       string
+	SSL          bool
 
 	CreateUser         bool
 	CreateUserPassword string
@@ -113,6 +117,54 @@ func Init(ctx context.Context, flags Flags, ssmUserPassword string) (*plugin.Inf
 	info.DSN = userDSN.String()
 
 	return info, nil
+}
+
+func Agents(toolAgentDir, dsn string, ssl bool) ([]plugin.Agent, error) {
+	mysqlCfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	mysqlArgs := fmt.Sprintf("--user %s --password %s", mysqlCfg.User, mysqlCfg.Passwd)
+	switch mysqlCfg.Net {
+	case "tcp":
+		host, port, err := net.SplitHostPort(mysqlCfg.Addr)
+		if err != nil {
+			return nil, err
+		}
+		mysqlArgs += fmt.Sprintf(" --host %s --port %s", host, port)
+	case "unix":
+		mysqlArgs += fmt.Sprintf(" --socket %s", mysqlCfg.Addr)
+	}
+
+	pmsCmd := fmt.Sprintf("pt-mysql-summary %s", mysqlArgs)
+	pdkcCmd := fmt.Sprintf("pt-duplicate-key-checker %s", mysqlArgs)
+	sukcCmd := fmt.Sprintf("st-unused-key-checker %s", mysqlArgs)
+	if ssl {
+		pmsCmd += " -- --ssl"
+		pdkcCmd += " s=true"
+		sukcCmd += " s=true"
+	}
+
+	return []plugin.Agent{
+		plugin.NewToolAgent(toolAgentDir, []plugin.ToolAgentConfItem{
+			{
+				Name:       "pt-mysql-summary",
+				Executable: pmsCmd,
+				Output:     path.Join(toolAgentDir, "pt-mysql-summary.log"),
+			},
+			{
+				Name:       "pt-duplicate-key-checker",
+				Executable: pdkcCmd,
+				Output:     path.Join(toolAgentDir, "pt-duplicate-key-checker.log"),
+			},
+			{
+				Name:       "st-unused-key-checker",
+				Executable: sukcCmd,
+				Output:     path.Join(toolAgentDir, "st-unused-key-checker.log"),
+			},
+		}),
+	}, nil
 }
 
 func createUser(ctx context.Context, db *sql.DB, userDSN dsn.DSN, flags Flags) (dsn.DSN, error) {

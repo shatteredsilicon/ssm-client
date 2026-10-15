@@ -19,10 +19,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -287,12 +289,17 @@ However, you can add another one with the different name just for testing purpos
 [exporter_args] are the command line options to be passed directly to Prometheus Exporter.
 		`,
 		Run: func(cmd *cobra.Command, args []string) {
-			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
-			if _, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL); err != nil {
+			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			if err != nil {
 				fmt.Println("Error adding linux metrics:", err)
 				os.Exit(1)
 			}
-			fmt.Println("OK, now monitoring this system.")
+			fmt.Println("[linux:metrics] OK, now monitoring this system.")
+
+			for _, agent := range info.Agents {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
+			}
 		},
 	}
 
@@ -329,8 +336,10 @@ Table statistics is automatically disabled when there are more than 10000 tables
 				os.Exit(1)
 			}
 
-			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
-			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			var agentList []string
+
+			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[linux:metrics] OK, already monitoring this system.")
 			} else if err != nil {
@@ -339,9 +348,12 @@ Table statistics is automatically disabled when there are more than 10000 tables
 			} else {
 				fmt.Println("[linux:metrics] OK, now monitoring this system.")
 			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
 
-			mysqlMetrics := mysqlMetrics.New(flagMySQLMetrics, flagMySQL, ssm.SSMBaseDir)
-			info, err := admin.AddMetrics(ctx, mysqlMetrics, false, flagDisableSSL)
+			mysqlMetrics := mysqlMetrics.New(flagMySQLMetrics, flagMySQL, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err = admin.AddMetrics(ctx, mysqlMetrics, false, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[mysql:metrics] OK, already monitoring MySQL metrics.")
 			} else if err != nil {
@@ -350,8 +362,11 @@ Table statistics is automatically disabled when there are more than 10000 tables
 			} else {
 				fmt.Println("[mysql:metrics] OK, now monitoring MySQL metrics using DSN", utils.SanitizeDSN(info.DSN))
 			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
 
-			mysqlQueries := mysqlQueries.New(flagQueries, flagMySQLQueries, flagMySQL)
+			mysqlQueries := mysqlQueries.New(flagQueries, flagMySQLQueries, flagMySQL, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err = admin.AddQueries(ctx, mysqlQueries, info)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[mysql:queries] OK, already monitoring MySQL queries.")
@@ -361,6 +376,14 @@ Table statistics is automatically disabled when there are more than 10000 tables
 			} else {
 				fmt.Println("[mysql:queries] OK, now monitoring MySQL queries from", info.QuerySource,
 					"using DSN", utils.SanitizeDSN(info.DSN))
+			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
+
+			slices.Sort(agentList)
+			for _, agent := range slices.Compact(agentList) {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
 			}
 		},
 	}
@@ -385,13 +408,17 @@ Table statistics is automatically disabled when there are more than 10000 tables
   ssm-admin add mysql:metrics -- --collect.perf_schema.eventsstatements
   ssm-admin add mysql:metrics -- --collect.perf_schema.eventswaits=false`,
 		Run: func(cmd *cobra.Command, args []string) {
-			mysqlMetrics := mysqlMetrics.New(flagMySQLMetrics, flagMySQL, ssm.SSMBaseDir)
+			mysqlMetrics := mysqlMetrics.New(flagMySQLMetrics, flagMySQL, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err := admin.AddMetrics(ctx, mysqlMetrics, false, flagDisableSSL)
 			if err != nil {
 				fmt.Println("Error adding MySQL metrics:", err)
 				os.Exit(1)
 			}
-			fmt.Println("OK, now monitoring MySQL metrics using DSN", utils.SanitizeDSN(info.DSN))
+			fmt.Println("[mysql:metrics] OK, now monitoring MySQL metrics using DSN", utils.SanitizeDSN(info.DSN))
+
+			for _, agent := range info.Agents {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
+			}
 		},
 	}
 	cmdAddMySQLQueries = &cobra.Command{
@@ -425,14 +452,18 @@ Type ssm-admin add mysql:queries --help to see all acceptable flags.
 					os.Exit(1)
 				}
 			}
-			mysqlQueries := mysqlQueries.New(flagQueries, flagMySQLQueries, flagMySQL)
+			mysqlQueries := mysqlQueries.New(flagQueries, flagMySQLQueries, flagMySQL, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err := admin.AddQueries(ctx, mysqlQueries, nil)
 			if err != nil {
 				fmt.Println("Error adding MySQL queries:", err)
 				os.Exit(1)
 			}
-			fmt.Println("OK, now monitoring MySQL queries from", info.QuerySource,
+			fmt.Println("[mysql:queries] OK, now monitoring MySQL queries from", info.QuerySource,
 				"using DSN", utils.SanitizeDSN(info.DSN))
+
+			for _, agent := range info.Agents {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
+			}
 		},
 	}
 	cmdAddMySQLTuning = &cobra.Command{
@@ -492,8 +523,10 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 				os.Exit(1)
 			}
 
-			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
-			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			var agentList []string
+
+			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[linux:metrics] OK, already monitoring this system.")
 			} else if err != nil {
@@ -502,9 +535,12 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 			} else {
 				fmt.Println("[linux:metrics] OK, now monitoring this system.")
 			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
 
 			postgresqlMetrics := postgresqlMetrics.New(flagPostgreSQL, ssm.SSMBaseDir)
-			info, err := admin.AddMetrics(ctx, postgresqlMetrics, false, flagDisableSSL)
+			info, err = admin.AddMetrics(ctx, postgresqlMetrics, false, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[postgresql:metrics] OK, already monitoring PostgreSQL metrics.")
 			} else if err != nil {
@@ -512,6 +548,9 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 				os.Exit(1)
 			} else {
 				fmt.Println("[postgresql:metrics] OK, now monitoring PostgreSQL metrics using DSN", utils.SanitizeDSN(info.DSN))
+			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
 			}
 
 			pgQueries := postgresqlQueries.New(flagQueries, flagPostgreSQLQueries, flagPostgreSQL)
@@ -524,6 +563,14 @@ a new user 'ssm' automatically using the given (auto-detected) PostgreSQL creden
 			} else {
 				fmt.Println("[postgresql:queries] OK, now monitoring PostgreSQL queries from", info.QuerySource,
 					"using DSN", utils.SanitizeDSN(info.DSN))
+			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
+
+			slices.Sort(agentList)
+			for _, agent := range slices.Compact(agentList) {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
 			}
 		},
 	}
@@ -614,8 +661,10 @@ When adding a MongoDB instance, you may provide --uri if the default one does no
 				os.Exit(1)
 			}
 
-			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
-			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			var agentList []string
+
+			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[linux:metrics]   OK, already monitoring this system.")
 			} else if err != nil {
@@ -624,9 +673,12 @@ When adding a MongoDB instance, you may provide --uri if the default one does no
 			} else {
 				fmt.Println("[linux:metrics]   OK, now monitoring this system.")
 			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
 
-			mongodbMetrics := mongodbMetrics.New(flagMongoURI, admin.Args, flagCluster, ssm.SSMBaseDir)
-			info, err := admin.AddMetrics(ctx, mongodbMetrics, false, flagDisableSSL)
+			mongodbMetrics := mongodbMetrics.New(flagMongoURI, admin.Args, flagCluster, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
+			info, err = admin.AddMetrics(ctx, mongodbMetrics, false, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[mongodb:metrics] OK, already monitoring MongoDB metrics.")
 			} else if err != nil {
@@ -635,8 +687,11 @@ When adding a MongoDB instance, you may provide --uri if the default one does no
 			} else {
 				fmt.Println("[mongodb:metrics] OK, now monitoring MongoDB metrics using URI", utils.SanitizeDSN(info.DSN))
 			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
 
-			mongodbQueries := mongodbQueries.New(flagQueries, flagMongoURI, admin.Args, ssm.SSMBaseDir)
+			mongodbQueries := mongodbQueries.New(flagQueries, flagMongoURI, admin.Args, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err = admin.AddQueries(ctx, mongodbQueries, info)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[mongodb:queries] OK, already monitoring MongoDB queries.")
@@ -648,6 +703,14 @@ When adding a MongoDB instance, you may provide --uri if the default one does no
 				fmt.Println("[mongodb:queries] It is required for correct operation that profiling of monitored MongoDB databases be enabled.")
 				fmt.Println("[mongodb:queries] Note that profiling is not enabled by default because it may reduce the performance of your MongoDB server.")
 				fmt.Println("[mongodb:queries] For more information read SSM documentation (https://github.com/shatteredsilicon/ssm-doc/blob/1.x/docs/conf-mongodb.md).")
+			}
+			if info != nil {
+				agentList = append(agentList, info.Agents...)
+			}
+
+			slices.Sort(agentList)
+			for _, agent := range slices.Compact(agentList) {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
 			}
 		},
 	}
@@ -665,13 +728,17 @@ When adding a MongoDB instance, you may provide --uri if the default one does no
   ssm-admin add mongodb:metrics --cluster bare-metal
   ssm-admin add mongodb:metrics -- --mongodb.tls`,
 		Run: func(cmd *cobra.Command, args []string) {
-			mongodbMetrics := mongodbMetrics.New(flagMongoURI, admin.Args, flagCluster, ssm.SSMBaseDir)
+			mongodbMetrics := mongodbMetrics.New(flagMongoURI, admin.Args, flagCluster, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err := admin.AddMetrics(ctx, mongodbMetrics, false, flagDisableSSL)
 			if err != nil {
 				fmt.Println("Error adding MongoDB metrics:", err)
 				os.Exit(1)
 			}
-			fmt.Println("OK, now monitoring MongoDB metrics using URI", utils.SanitizeDSN(info.DSN))
+			fmt.Println("[mongodb:metrics] OK, now monitoring MongoDB metrics using URI", utils.SanitizeDSN(info.DSN))
+
+			for _, agent := range info.Agents {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
+			}
 		},
 	}
 	cmdAddMongoDBQueries = &cobra.Command{
@@ -694,16 +761,20 @@ Type ssm-admin add mongodb:queries --help to see all acceptable flags.
 				fmt.Printf(msg, strings.Join(admin.Args, ", "))
 				os.Exit(1)
 			}
-			mongodbQueries := mongodbQueries.New(flagQueries, flagMongoURI, admin.Args, ssm.SSMBaseDir)
+			mongodbQueries := mongodbQueries.New(flagQueries, flagMongoURI, admin.Args, ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			info, err := admin.AddQueries(ctx, mongodbQueries, nil)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("Error adding MongoDB queries:", err)
 				os.Exit(1)
 			}
-			fmt.Println("OK, now monitoring MongoDB queries using URI", utils.SanitizeDSN(info.DSN))
-			fmt.Println("It is required for correct operation that profiling of monitored MongoDB databases be enabled.")
-			fmt.Println("Note that profiling is not enabled by default because it may reduce the performance of your MongoDB server.")
-			fmt.Println("For more information read SSM documentation (https://github.com/shatteredsilicon/ssm-doc/blob/1.x/docs/conf-mongodb.md).")
+			fmt.Println("[mongodb:queries] OK, now monitoring MongoDB queries using URI", utils.SanitizeDSN(info.DSN))
+			fmt.Println("[mongodb:queries] It is required for correct operation that profiling of monitored MongoDB databases be enabled.")
+			fmt.Println("[mongodb:queries] Note that profiling is not enabled by default because it may reduce the performance of your MongoDB server.")
+			fmt.Println("[mongodb:queries] For more information read SSM documentation (https://github.com/shatteredsilicon/ssm-doc/blob/1.x/docs/conf-mongodb.md).")
+
+			for _, agent := range info.Agents {
+				fmt.Printf("[%s] OK, now monitoring this system.\n", agent)
+			}
 		},
 	}
 	cmdAddProxySQL = &cobra.Command{
@@ -727,7 +798,7 @@ When adding a ProxySQL instance, you may provide --dsn if the default one does n
 				os.Exit(1)
 			}
 
-			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir)
+			linuxMetrics := linuxMetrics.New(ssm.SSMBaseDir, ssm.ToolAgentBaseDir)
 			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
 			if err == ssm.ErrDuplicate {
 				fmt.Println("[linux:metrics] OK, already monitoring this system.")
@@ -765,6 +836,29 @@ When adding a ProxySQL instance, you may provide --dsn if the default one does n
 			fmt.Println("OK, now monitoring ProxySQL metrics using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
+
+	cmdAddToolAgent = &cobra.Command{
+		Use:   "tool:agent [flags] [name] [-- [agent_args]]",
+		Short: "Add this system to tool agent.",
+		Long: `This command adds this system to tool agent.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+[agent_args] are the command line options to be passed directly to Tool Agent.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(flagToolList) == 0 {
+				fmt.Println("At least 1 tool should be specified.")
+				os.Exit(1)
+			}
+			toolAgent := plugin.NewToolAgent(ssm.ToolAgentBaseDir, []plugin.ToolAgentConfItem(flagToolList))
+			if err := admin.AddAgent(ctx, toolAgent); err != nil {
+				fmt.Println("Error adding tool agent:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, added this system to tool agent.")
+		},
+	}
+
 	cmdAddExternalService = &cobra.Command{
 		Use:   "external:service job_name [instance] --service-port=port",
 		Short: "Add external Prometheus exporter running on this host to new or existing scrape job for metrics monitoring.",
@@ -973,6 +1067,15 @@ An optional list of instances (scrape targets) can be provided.
 			} else {
 				fmt.Printf("[mysql:queries] OK, removed MySQL queries %s from monitoring.\n", admin.ServiceName)
 			}
+
+			err = admin.RemoveAgent(plugin.ToolAgent)
+			if err == ssm.ErrNoService {
+				fmt.Printf("[tool:agent] OK, no tool agent %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[tool:agent] Error removing tool agent %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[tool:agent] OK, removed tool agent %s from monitoring.\n", admin.ServiceName)
+			}
 		},
 	}
 	cmdRemoveLinuxMetrics = &cobra.Command{
@@ -1069,6 +1172,15 @@ An optional list of instances (scrape targets) can be provided.
 			} else {
 				fmt.Printf("[mongodb:queries] OK, removed MongoDB queries %s from monitoring.\n", admin.ServiceName)
 			}
+
+			err = admin.RemoveAgent(plugin.ToolAgent)
+			if err == ssm.ErrNoService {
+				fmt.Printf("[tool:agent] OK, no tool agent %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[tool:agent] Error removing tool agent %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[tool:agent] OK, removed tool agent %s from monitoring.\n", admin.ServiceName)
+			}
 		},
 	}
 	cmdRemoveMongoDBMetrics = &cobra.Command{
@@ -1135,6 +1247,15 @@ An optional list of instances (scrape targets) can be provided.
 			} else {
 				fmt.Printf("[postgresql:queries] OK, removed PostgreSQL queries %s from monitoring.\n", admin.ServiceName)
 			}
+
+			err = admin.RemoveAgent(plugin.ToolAgent)
+			if err == ssm.ErrNoService {
+				fmt.Printf("[tool:agent] OK, no tool agent %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[tool:agent] Error removing tool agent %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[tool:agent] OK, removed tool agent %s from monitoring.\n", admin.ServiceName)
+			}
 		},
 	}
 	cmdRemovePostgreSQLMetrics = &cobra.Command{
@@ -1180,6 +1301,21 @@ An optional list of instances (scrape targets) can be provided.
 				os.Exit(1)
 			}
 			fmt.Printf("OK, removed ProxySQL metrics %s from monitoring.\n", admin.ServiceName)
+		},
+	}
+	cmdRemoveToolAgent = &cobra.Command{
+		Use:   "tool:agent [flags] [name]",
+		Short: "Remove this system from tool agent.",
+		Long: `This command removes this system from tool agent.
+
+[name] is an optional argument, by default it is set to the client name of this SSM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveAgent(plugin.ToolAgent); err != nil {
+				fmt.Printf("Error removing %s from tool agent: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed %s from tool agent.\n", admin.ServiceName)
 		},
 	}
 
@@ -1672,7 +1808,30 @@ Usually, it runs automatically when ssm-client package is upgraded to upgrade lo
 	flagTimeout           time.Duration
 
 	flagNTPHost string
+
+	flagToolList toolList
 )
+
+type toolList []plugin.ToolAgentConfItem
+
+func (tools *toolList) String() string {
+	bytes, _ := json.Marshal(tools)
+	return string(bytes)
+}
+
+func (tools *toolList) Set(val string) error {
+	var item plugin.ToolAgentConfItem
+	if err := json.Unmarshal([]byte(val), &item); err != nil {
+		return err
+	}
+
+	*tools = append(*tools, item)
+	return nil
+}
+
+func (tools *toolList) Type() string {
+	return "ToolList"
+}
 
 func main() {
 	// Commands.
@@ -1712,6 +1871,7 @@ func main() {
 		cmdAddPostgreSQLQueries,
 		cmdAddProxySQL,
 		cmdAddProxySQLMetrics,
+		cmdAddToolAgent,
 		cmdAddExternalService,
 		cmdAddExternalMetrics,
 		cmdAddExternalInstances,
@@ -1729,6 +1889,7 @@ func main() {
 		cmdRemovePostgreSQLMetrics,
 		cmdRemovePostgreSQLQueries,
 		cmdRemoveProxySQLMetrics,
+		cmdRemoveToolAgent,
 		cmdRemoveExternalService,
 		cmdRemoveExternalMetrics,
 		cmdRemoveExternalInstances,
@@ -1777,6 +1938,7 @@ func main() {
 		cmd.Flags().StringSliceVar(&flagMySQL.FilterOmit, "qan-filter-omit", nil, "queries that should be omitted, split by comma")
 		cmd.Flags().BoolVar(&flagMySQL.ExcludeMonitoring, "exclude-monitoring-from-slowlog", false, "whether to exclude monitoring queries from slow log")
 		cmd.Flags().DurationVar(&flagMySQL.SQLCheckTimeout, "sql-check-timeout", 0, "maximum time for running the quries")
+		cmd.Flags().BoolVar(&flagMySQL.SSL, "mysql-ssl", false, "enable MySQL SSL connection")
 	}
 	// Common MySQL Metrics flags.
 	addCommonMySQLMetricsFlags := func(cmd *cobra.Command) {
@@ -1907,6 +2069,8 @@ func main() {
 	cmdDisable.Flags().BoolVar(&flagAll, "all", false, "disable all monitoring services")
 
 	cmdCheckNet.Flags().StringVar(&flagNTPHost, "ntp-host", "", "NTP server to use")
+
+	cmdAddToolAgent.Flags().Var(&flagToolList, "tool", "repeated JSON string representing a tool to run. for example --tool='{\"name\":\"pt-summary\", \"executable\": \"pt-summary --arg1 --arg2\", \"output\":\"/path/to/log\"}'")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

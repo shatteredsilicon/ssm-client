@@ -3,16 +3,21 @@
 if [ "$1" = "remove" ]; then
     rm -rf /opt/ss/ssm-client
     rm -rf /opt/ss/qan-agent
+    rm -rf /opt/ss/tool-agent
     rm -f /lib/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service
     rm -f /lib/systemd/system/ssm-{mysql,mongodb}-queries.service
     rm -f /etc/systemd/system/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.service.dpkg-old
     rm -f /etc/systemd/system/ssm-{mysql,mongodb}-queries.service.dpkg-old
     rm -f /etc/systemd/system/ssm-mysql-tuning.service.dpkg-old
+    rm -f /etc/systemd/system/ssm-tool-agent.service.dpkg-old
     rm -f /etc/init.d/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics
-    rm -f /etc/init.d/ssm-{mysql,mongodb}-queries
-    rm -f /etc/init.d/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.conf
-    rm -f /etc/init.d/ssm-{mysql,mongodb}-queries.conf
-    rm -f /etc/init.d/ssm-mysql-tuning.conf
+    rm -f /etc/init.d/ssm-{mysql,mongodb,postgresql}-queries
+    rm -f /etc/init.d/ssm-mysql-tuning
+    rm -f /etc/init.d/ssm-tool-agent
+    rm -f /etc/init/ssm-{linux,mysql,mongodb,postgresql,proxysql}-metrics.conf
+    rm -f /etc/init/ssm-{mysql,mongodb,postgresql}-queries.conf
+    rm -f /etc/init/ssm-mysql-tuning.conf
+    rm -f /etc/init/ssm-tool-agent.conf
 
     if getent passwd ssm > /dev/null 2>&1; then
         userdel ssm > /dev/null 2>&1

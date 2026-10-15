@@ -23,11 +23,13 @@ type Flags struct {
 }
 
 // New returns *Queries.
-func New(queriesFlags plugin.QueriesFlags, flags Flags, mysqlFlags mysql.Flags) *Queries {
+func New(queriesFlags plugin.QueriesFlags, flags Flags, mysqlFlags mysql.Flags, ssmBaseDir, toolAgentDir string) *Queries {
 	return &Queries{
 		queriesFlags: queriesFlags,
 		flags:        flags,
 		mysqlFlags:   mysqlFlags,
+		ssmBaseDir:   ssmBaseDir,
+		toolAgentDir: toolAgentDir,
 	}
 }
 
@@ -36,6 +38,8 @@ type Queries struct {
 	queriesFlags plugin.QueriesFlags
 	flags        Flags
 	mysqlFlags   mysql.Flags
+	ssmBaseDir   string
+	toolAgentDir string
 
 	dsn string
 }
@@ -107,4 +111,9 @@ func (q Queries) InstallerArgs() []string {
 	}
 
 	return args
+}
+
+// Agents returns agents that are associated to the exporter
+func (q Queries) Agents() ([]plugin.Agent, error) {
+	return mysql.Agents(q.toolAgentDir, q.dsn, q.mysqlFlags.SSL)
 }

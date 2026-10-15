@@ -15,16 +15,18 @@ import (
 var _ plugin.Metrics = (*Metrics)(nil)
 
 // New returns *Metrics.
-func New(ssmBaseDir string) *Metrics {
+func New(ssmBaseDir, toolAgentDir string) *Metrics {
 	return &Metrics{
-		ssmBaseDir: ssmBaseDir,
+		ssmBaseDir:   ssmBaseDir,
+		toolAgentDir: toolAgentDir,
 	}
 }
 
 // Metrics implements plugin.Metrics.
 type Metrics struct {
-	ssmBaseDir string
-	port       int
+	ssmBaseDir   string
+	toolAgentDir string
+	port         int
 }
 
 // Init initializes plugin.
@@ -92,4 +94,16 @@ func (Metrics) Cluster() string {
 // CustomOptions returns key-value map of custom options that are applied
 func (m Metrics) CustomOptions() (map[string]string, error) {
 	return nil, nil
+}
+
+func (m Metrics) Agents() ([]plugin.Agent, error) {
+	return []plugin.Agent{
+		plugin.NewToolAgent(m.toolAgentDir, []plugin.ToolAgentConfItem{
+			{
+				Name:       "pt-summary",
+				Executable: "pt-summary",
+				Output:     path.Join(m.toolAgentDir, "pt-summary.log"),
+			},
+		}),
+	}, nil
 }
