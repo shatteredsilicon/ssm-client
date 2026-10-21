@@ -212,6 +212,7 @@ fi
 %systemd_postun ssm-tool-agent.service
 
 %files
+%config(noreplace) /opt/ss/tool-agent/*.conf
 %config(noreplace) /opt/ss/ssm-client/*.conf
 %attr(0660,ssm,ssm) %ghost /opt/ss/ssm-client/ssm.yml
 %attr(-,ssm,ssm) /opt/ss

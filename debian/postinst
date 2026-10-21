@@ -41,7 +41,9 @@ if [ "$1" == "configure" ] && [ -z "$2" ]; then
     for file in /opt/ss/ssm-client/config/*; do
         mv "${file}" /opt/ss/ssm-client/
     done
-    [ -z "$(ls -A /opt/ss/ssm-client/config)" ] || rm -rf /opt/ss/ssm-client/config
+    for file in /opt/ss/tool-agent/config/*; do
+        mv "${file}" /opt/ss/tool-agent/
+    done
 
 # upgrade
 elif [ "$1" == "configure" ]; then
@@ -58,7 +60,20 @@ elif [ "$1" == "configure" ]; then
                 mv "${file}" /opt/ss/ssm-client/${file#/opt/ss/ssm-client/config/}.new
             fi
         done
+
+        for file in /opt/ss/tool-agent/config/*; do
+            if ! [ -f /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/} ]; then
+                mv "${file}" /opt/ss/tool-agent/
+            elif diff -s "$file" /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/} >/dev/null; then
+                :
+            else
+                mv "${file}" /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/}.new
+            fi
+        done
     fi
 
     ssm-admin upgrade
 fi
+
+rm -rf /opt/ss/ssm-client/config
+rm -rf /opt/ss/tool-agent/config
