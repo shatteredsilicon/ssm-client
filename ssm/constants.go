@@ -51,10 +51,9 @@ var (
 	SSLCertFile = fmt.Sprintf("%s/server.crt", SSMBaseDir)
 	SSLKeyFile  = fmt.Sprintf("%s/server.key", SSMBaseDir)
 
-	ErrDuplicate          = errors.New("there is already one instance with this name under monitoring.")
-	ErrNoService          = errors.New("no service found.")
-	ErrNoEssentialService = errors.New("no essential service found.")
-	errNoInstance         = errors.New("no instance found on QAN API.")
+	ErrDuplicate  = errors.New("there is already one instance with this name under monitoring.")
+	ErrNoService  = errors.New("no service found.")
+	errNoInstance = errors.New("no instance found on QAN API.")
 )
 
 var (

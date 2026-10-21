@@ -38,7 +38,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"slices"
 	"strings"
 	"time"
 
@@ -502,24 +501,6 @@ func (a *Admin) getConsulService(service, name string) (*consul.AgentService, er
 	return nil, nil
 }
 
-func (a *Admin) hasReportAgentRelatedConsulService(node *consul.CatalogNode) (bool, error) {
-	var err error
-	if node == nil {
-		node, _, err = a.consulAPI.Catalog().Node(a.Config.ClientName, nil)
-		if err != nil || node == nil {
-			return false, err
-		}
-	}
-
-	for _, svc := range node.Services {
-		if slices.Contains(plugin.ToolAgentRelatedServices, svc.Service) {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 // checkGlobalDuplicateService check if new service is globally unique and prevent duplicate clients.
 func (a *Admin) checkGlobalDuplicateService(service, name string) error {
 	// Prevent duplicate clients (2 or more nodes using the same name).
@@ -787,10 +768,6 @@ type localService struct {
 	serviceType string
 	serviceName string
 	filePath    string
-}
-
-func (svc localService) isQueries() bool {
-	return strings.HasSuffix(svc.serviceType, ":queries")
 }
 
 func serviceTypeInName(serviceType string) string {
