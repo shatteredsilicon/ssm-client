@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
@@ -69,11 +70,15 @@ func Agents(toolAgentDir, dsn string) ([]plugin.Agent, error) {
 		return nil, err
 	}
 
+	var args string
+	if opts.Auth != nil {
+		args = fmt.Sprintf("--username=%s --password=%s --authenticationDatabase=%s", strconv.Quote(opts.Auth.Username), strconv.Quote(opts.Auth.Password), strconv.Quote(opts.Auth.AuthSource))
+	}
 	return []plugin.Agent{
 		plugin.NewToolAgent(toolAgentDir, []plugin.ToolAgentConfItem{
 			{
 				Name:       "pt-mongodb-summary",
-				Executable: fmt.Sprintf("pt-mongodb-summary --username=%s --password=%s --authenticationDatabase=%s", opts.Auth.Username, opts.Auth.Password, opts.Auth.AuthSource),
+				Executable: fmt.Sprintf("pt-mongodb-summary %s", args),
 				Output:     path.Join(toolAgentDir, "pt-mongodb-summary.log"),
 			},
 		}),

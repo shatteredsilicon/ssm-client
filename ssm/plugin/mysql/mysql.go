@@ -8,6 +8,7 @@ import (
 	"net"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,7 +126,7 @@ func Agents(toolAgentDir, dsn string, ssl bool) ([]plugin.Agent, error) {
 		return nil, err
 	}
 
-	mysqlArgs := fmt.Sprintf("--user %s --password %s", mysqlCfg.User, mysqlCfg.Passwd)
+	mysqlArgs := fmt.Sprintf("--user %s --password %s", strconv.Quote(mysqlCfg.User), strconv.Quote(mysqlCfg.Passwd))
 	switch mysqlCfg.Net {
 	case "tcp":
 		host, port, err := net.SplitHostPort(mysqlCfg.Addr)
