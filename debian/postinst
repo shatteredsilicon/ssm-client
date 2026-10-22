@@ -1,7 +1,10 @@
 #!/bin/bash
 
 if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss" ]; then
-    chown -R ssm:ssm /opt/ss
+    find /opt/ss -path /opt/ss/tool-agent -prune -o -exec chown ssm:ssm {} +
+fi
+if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss/tool-agent" ]; then
+    chown -R root:ssm /opt/ss/tool-agent
 fi
 
 # check init system

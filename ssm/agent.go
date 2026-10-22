@@ -3,6 +3,7 @@ package ssm
 import (
 	"context"
 	"fmt"
+	"os"
 
 	consul "github.com/hashicorp/consul/api"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
@@ -14,6 +15,12 @@ func (a *Admin) AddAgent(ctx context.Context, agent plugin.Agent) error {
 	}
 
 	serviceType := fmt.Sprintf("%s:agent", agent.Name())
+
+	if !a.SkipAdmin && serviceType == plugin.ToolAgent {
+		if err := os.Chown(agent.CfgPath(), 0, int(a.GID)); err != nil {
+			return err
+		}
+	}
 
 	consulSvc, err := a.getConsulService(serviceType, a.ServiceName)
 	if err != nil {

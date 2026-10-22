@@ -70,7 +70,7 @@ install -m 0755 -d $RPM_BUILD_ROOT/usr/sbin
 install -m 0755 %{_GOPATH}/bin/ssm-client $RPM_BUILD_ROOT/usr/sbin/ssm-admin
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/qan-agent/bin
-install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/tool-agent
+install -m 0750 -d $RPM_BUILD_ROOT/opt/ss/tool-agent
 install -m 0755 -d $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector
 install -m 0755 -d $RPM_BUILD_ROOT/lib/systemd/system
 install -m 0755 -d $RPM_BUILD_ROOT/etc/rsyslog.d/
@@ -86,7 +86,7 @@ install -m 0755 %{_GOPATH}/bin/tool-agent $RPM_BUILD_ROOT/opt/ss/tool-agent/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/mysqld_exporter/queries-mysqld.yml $RPM_BUILD_ROOT/opt/ss/ssm-client
 install -m 0755 %{_GOPATH}/src/github.com/shatteredsilicon/node_exporter/example.prom $RPM_BUILD_ROOT/opt/ss/ssm-client/textfile-collector/
 install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,mt-agent}/support-files/config/*.conf $RPM_BUILD_ROOT/opt/ss/ssm-client/
-install -m 0600 %{_GOPATH}/src/github.com/shatteredsilicon/tool-agent/support-files/config/*.conf $RPM_BUILD_ROOT/opt/ss/tool-agent/
+install -m 0640 %{_GOPATH}/src/github.com/shatteredsilicon/tool-agent/support-files/config/*.conf $RPM_BUILD_ROOT/opt/ss/tool-agent/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent}/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{mt-agent,tool-agent}/support-files/systemd/ssm-*.service $RPM_BUILD_ROOT/lib/systemd/system/
 install -m 0644 %{_GOPATH}/src/github.com/shatteredsilicon/{node_exporter,mysqld_exporter,mongodb_exporter,postgres_exporter,proxysql_exporter,qan-agent,mt-agent,tool-agent}/support-files/rsyslog.d/* $RPM_BUILD_ROOT/etc/rsyslog.d/
@@ -108,7 +108,7 @@ fi
 
 %post
 if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss" ]; then
-    chown -R ssm:ssm /opt/ss
+    find /opt/ss -path /opt/ss/tool-agent -prune -o -exec chown ssm:ssm {} +
 fi
 
 # Upgrade
@@ -216,6 +216,7 @@ fi
 %config(noreplace) /opt/ss/ssm-client/*.conf
 %attr(0660,ssm,ssm) %ghost /opt/ss/ssm-client/ssm.yml
 %attr(-,ssm,ssm) /opt/ss
+%attr(0750,root,ssm) /opt/ss/tool-agent
 %config /lib/systemd/system/ssm-*.service
 /usr/sbin/ssm-admin
 %config(noreplace) /etc/rsyslog.d/ssm-*.conf

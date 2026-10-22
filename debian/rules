@@ -109,3 +109,5 @@ override_dh_auto_install:
 override_dh_fixperms:
 	dh_fixperms
 	chmod 600 $(PACKAGE_ROOT)/opt/ss/ssm-client/config/*
+	chmod 0750 $(PACKAGE_ROOT)/opt/ss/tool-agent
+	chmod 0640 $(PACKAGE_ROOT)/opt/ss/tool-agent/config/*

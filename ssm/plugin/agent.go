@@ -1,7 +1,9 @@
 package plugin
 
 import (
+	"bytes"
 	"context"
+	"os"
 	"path"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 type Agent interface {
 	Init(context.Context) error
 	Name() string
+	CfgPath() string
 	// CustomOptions returns key-value map of custom options that are applied
 	CustomOptions() (map[string]string, error)
 }
@@ -34,7 +37,7 @@ func NewToolAgent(baseDir string, confItems []ToolAgentConfItem) *toolAgent {
 }
 
 func (ta *toolAgent) Init(ctx context.Context) error {
-	toolAgentCfgPath := ta.cfgPath()
+	toolAgentCfgPath := ta.CfgPath()
 	toolAgentCfgFile, err := ini.LooseLoad(toolAgentCfgPath)
 	if err != nil {
 		return err
@@ -45,21 +48,26 @@ func (ta *toolAgent) Init(ctx context.Context) error {
 		toolAgentCfgFile.Section(item.Name).Key("output").SetValue(item.Output)
 	}
 
-	return toolAgentCfgFile.SaveTo(toolAgentCfgPath)
+	var buf bytes.Buffer
+	if _, err := toolAgentCfgFile.WriteTo(&buf); err != nil {
+		return err
+	}
+
+	return os.WriteFile(toolAgentCfgPath, buf.Bytes(), 0640)
 }
 
 func (ta *toolAgent) Name() string {
 	return "tool"
 }
 
-func (ta *toolAgent) cfgPath() string {
+func (ta *toolAgent) CfgPath() string {
 	return path.Join(ta.baseDir, "tool-agent.conf")
 }
 
 func (ta *toolAgent) CustomOptions() (map[string]string, error) {
 	opts := make(map[string]string)
 
-	cfgFile, err := ini.Load(ta.cfgPath())
+	cfgFile, err := ini.Load(ta.CfgPath())
 	if err != nil {
 		return nil, err
 	}
