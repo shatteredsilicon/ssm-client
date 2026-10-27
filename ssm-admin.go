@@ -850,7 +850,7 @@ When adding a ProxySQL instance, you may provide --dsn if the default one does n
 				fmt.Println("At least 1 tool should be specified.")
 				os.Exit(1)
 			}
-			toolAgent := plugin.NewToolAgent(ssm.ToolAgentBaseDir, []plugin.ToolAgentConfItem(flagToolList))
+			toolAgent := plugin.NewToolAgent(ssm.ToolAgentBaseDir, []plugin.ToolAgentConfItem(flagToolList), nil)
 			if err := admin.AddAgent(ctx, toolAgent); err != nil {
 				fmt.Println("Error adding tool agent:", err)
 				os.Exit(1)

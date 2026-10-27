@@ -17,8 +17,10 @@ func (a *Admin) AddAgent(ctx context.Context, agent plugin.Agent) error {
 	serviceType := fmt.Sprintf("%s:agent", agent.Name())
 
 	if !a.SkipAdmin && serviceType == plugin.ToolAgent {
-		if err := os.Chown(agent.CfgPath(), 0, int(a.GID)); err != nil {
-			return err
+		for _, filePath := range agent.GeneratedFiles() {
+			if err := os.Chown(filePath, 0, int(a.GID)); err != nil {
+				return err
+			}
 		}
 	}
 

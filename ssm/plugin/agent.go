@@ -14,38 +14,46 @@ type Agent interface {
 	Init(context.Context) error
 	Name() string
 	CfgPath() string
+	GeneratedFiles() []string
 	// CustomOptions returns key-value map of custom options that are applied
 	CustomOptions() (map[string]string, error)
 }
 
 type toolAgent struct {
-	baseDir   string
-	confItems []ToolAgentConfItem
+	baseDir        string
+	confItems      []ToolAgentConfItem
+	generatedFiles []string
 }
 
 type ToolAgentConfItem struct {
-	Name       string `json:"name"`
-	Executable string `json:"executable"`
-	Output     string `json:"output"`
+	Name       string   `json:"name"`
+	Executable string   `json:"executable"`
+	Stdin      []string `json:"stdin"`
 }
 
-func NewToolAgent(baseDir string, confItems []ToolAgentConfItem) *toolAgent {
+func NewToolAgent(baseDir string, confItems []ToolAgentConfItem, generatedFiles []string) *toolAgent {
 	return &toolAgent{
-		baseDir:   baseDir,
-		confItems: confItems,
+		baseDir:        baseDir,
+		confItems:      confItems,
+		generatedFiles: generatedFiles,
 	}
 }
 
 func (ta *toolAgent) Init(ctx context.Context) error {
 	toolAgentCfgPath := ta.CfgPath()
-	toolAgentCfgFile, err := ini.LooseLoad(toolAgentCfgPath)
+	toolAgentCfgFile, err := ini.LoadSources(ini.LoadOptions{
+		AllowShadows: true,
+		Loose:        true,
+	}, toolAgentCfgPath)
 	if err != nil {
 		return err
 	}
 
 	for _, item := range ta.confItems {
 		toolAgentCfgFile.Section(item.Name).Key("executable").SetValue(item.Executable)
-		toolAgentCfgFile.Section(item.Name).Key("output").SetValue(item.Output)
+		for _, stdin := range item.Stdin {
+			toolAgentCfgFile.Section(item.Name).NewKey("stdin", stdin)
+		}
 	}
 
 	var buf bytes.Buffer
@@ -53,6 +61,7 @@ func (ta *toolAgent) Init(ctx context.Context) error {
 		return err
 	}
 
+	ta.generatedFiles = append(ta.generatedFiles, toolAgentCfgPath)
 	return os.WriteFile(toolAgentCfgPath, buf.Bytes(), 0640)
 }
 
@@ -84,4 +93,8 @@ func (ta *toolAgent) CustomOptions() (map[string]string, error) {
 	}
 
 	return opts, nil
+}
+
+func (ta *toolAgent) GeneratedFiles() []string {
+	return ta.generatedFiles
 }

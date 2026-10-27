@@ -31,7 +31,7 @@ var uninitializedMetrics = map[string]plugin.Metrics{
 	plugin.MySQLMetrics: mysqlMetrics.New(mysqlMetrics.Flags{}, mysql.Flags{}, SSMBaseDir, ToolAgentBaseDir),
 }
 var uninitializedAgents = map[string]plugin.Agent{
-	plugin.ToolAgent: plugin.NewToolAgent(ToolAgentBaseDir, nil),
+	plugin.ToolAgent: plugin.NewToolAgent(ToolAgentBaseDir, nil, nil),
 }
 
 // AddMetrics add metrics service to monitoring.

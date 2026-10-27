@@ -102,8 +102,7 @@ func (m Metrics) Agents() ([]plugin.Agent, error) {
 			{
 				Name:       "pt-summary",
 				Executable: "pt-summary",
-				Output:     path.Join(m.toolAgentDir, "pt-summary.log"),
 			},
-		}),
+		}, nil),
 	}, nil
 }

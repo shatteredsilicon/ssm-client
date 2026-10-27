@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 
@@ -72,15 +71,15 @@ func Agents(toolAgentDir, dsn string) ([]plugin.Agent, error) {
 
 	var args string
 	if opts.Auth != nil {
-		args = fmt.Sprintf("--username=%s --password=%s --authenticationDatabase=%s", strconv.Quote(opts.Auth.Username), strconv.Quote(opts.Auth.Password), strconv.Quote(opts.Auth.AuthSource))
+		args = fmt.Sprintf("--username=%s --password --authenticationDatabase=%s", strconv.Quote(opts.Auth.Username), strconv.Quote(opts.Auth.AuthSource))
 	}
 	return []plugin.Agent{
 		plugin.NewToolAgent(toolAgentDir, []plugin.ToolAgentConfItem{
 			{
 				Name:       "pt-mongodb-summary",
 				Executable: fmt.Sprintf("pt-mongodb-summary %s", args),
-				Output:     path.Join(toolAgentDir, "pt-mongodb-summary.log"),
+				Stdin:      []string{strconv.Quote(opts.Auth.Password)},
 			},
-		}),
+		}, nil),
 	}, nil
 }
