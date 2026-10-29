@@ -43,8 +43,9 @@ var (
 	// to set root filesystem for ssm-admin
 	RootDir = ""
 
-	SSMBaseDir   = RootDir + "/opt/ss/ssm-client"
-	AgentBaseDir = RootDir + "/opt/ss/qan-agent"
+	SSMBaseDir       = RootDir + "/opt/ss/ssm-client"
+	AgentBaseDir     = RootDir + "/opt/ss/qan-agent"
+	ToolAgentBaseDir = RootDir + "/opt/ss/tool-agent"
 
 	ConfigFile  = fmt.Sprintf("%s/ssm.yml", SSMBaseDir)
 	SSLCertFile = fmt.Sprintf("%s/server.crt", SSMBaseDir)

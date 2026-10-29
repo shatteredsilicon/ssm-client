@@ -25,4 +25,6 @@ type Queries interface {
 	InstanceTypeName() string
 	// Config returns pc.QAN, this allows for additional configuration of QAN.
 	Config() pc.QAN
+	// Agents returns agents that are associated to the plugin
+	Agents() ([]Agent, error)
 }

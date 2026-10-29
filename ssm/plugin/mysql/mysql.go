@@ -1,18 +1,24 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
+	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/go-sql-driver/mysql"
 	"github.com/percona/go-mysql/dsn"
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
 	"github.com/shatteredsilicon/ssm-client/ssm/utils"
+	"gopkg.in/ini.v1"
 )
 
 // Flags are MySQL specific flags.
@@ -23,6 +29,7 @@ type Flags struct {
 	Host         string
 	Port         string
 	Socket       string
+	SSL          bool
 
 	CreateUser         bool
 	CreateUserPassword string
@@ -113,6 +120,103 @@ func Init(ctx context.Context, flags Flags, ssmUserPassword string) (*plugin.Inf
 	info.DSN = userDSN.String()
 
 	return info, nil
+}
+
+func Agents(toolAgentDir, dsn string, ssl bool) ([]plugin.Agent, error) {
+	mysqlCfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	pmsCfgPath := path.Join(toolAgentDir, "pt-mysql-summary.conf")
+	pmsCfg, err := ini.LooseLoad(pmsCfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pdkcCfgPath := path.Join(toolAgentDir, "pt-duplicate-key-checker.conf")
+	pdkcCfg, err := ini.LooseLoad(pdkcCfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	sukcCfgPath := path.Join(toolAgentDir, "st-unused-key-checker.conf")
+	sukcCfg, err := ini.LooseLoad(sukcCfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pmsCfg.Section("").Key("user").SetValue(mysqlCfg.User)
+	pmsCfg.Section("").Key("password").SetValue(mysqlCfg.Passwd)
+	pdkcCfg.Section("").Key("user").SetValue(mysqlCfg.User)
+	pdkcCfg.Section("").Key("password").SetValue(mysqlCfg.Passwd)
+	sukcCfg.Section("").Key("user").SetValue(mysqlCfg.User)
+	sukcCfg.Section("").Key("password").SetValue(mysqlCfg.Passwd)
+
+	switch mysqlCfg.Net {
+	case "tcp":
+		host, port, err := net.SplitHostPort(mysqlCfg.Addr)
+		if err != nil {
+			return nil, err
+		}
+		pmsCfg.Section("").Key("host").SetValue(host)
+		pmsCfg.Section("").Key("port").SetValue(port)
+		pdkcCfg.Section("").Key("host").SetValue(host)
+		pdkcCfg.Section("").Key("port").SetValue(port)
+		sukcCfg.Section("").Key("host").SetValue(host)
+		sukcCfg.Section("").Key("port").SetValue(port)
+	case "unix":
+		pmsCfg.Section("").Key("socket").SetValue(mysqlCfg.Addr)
+		pdkcCfg.Section("").Key("socket").SetValue(mysqlCfg.Addr)
+		sukcCfg.Section("").Key("socket").SetValue(mysqlCfg.Addr)
+	}
+
+	var pmsBuf, pdkcBuf, sukcBuf bytes.Buffer
+	if _, err := pmsCfg.WriteTo(&pmsBuf); err != nil {
+		return nil, err
+	}
+	if _, err := pdkcCfg.WriteTo(&pdkcBuf); err != nil {
+		return nil, err
+	}
+	if _, err := sukcCfg.WriteTo(&sukcBuf); err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(pmsCfgPath, pmsBuf.Bytes(), 0640); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(pdkcCfgPath, pdkcBuf.Bytes(), 0640); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(sukcCfgPath, sukcBuf.Bytes(), 0640); err != nil {
+		return nil, err
+	}
+
+	pmsCmd := fmt.Sprintf("pt-mysql-summary --config %s", pmsCfgPath)
+	pdkcCmd := fmt.Sprintf("pt-duplicate-key-checker --config %s", pdkcCfgPath)
+	sukcCmd := fmt.Sprintf("st-unused-key-checker --config %s", sukcCfgPath)
+	if ssl {
+		pmsCmd += " -- --ssl"
+		pdkcCmd += " s=true"
+		sukcCmd += " --mysql-ssl"
+	}
+
+	return []plugin.Agent{
+		plugin.NewToolAgent(toolAgentDir, []plugin.ToolAgentConfItem{
+			{
+				Name:       "pt-mysql-summary",
+				Executable: pmsCmd,
+			},
+			{
+				Name:       "pt-duplicate-key-checker",
+				Executable: pdkcCmd,
+			},
+			{
+				Name:       "st-unused-key-checker",
+				Executable: sukcCmd,
+			},
+		}, []string{pmsCfgPath, pdkcCfgPath, sukcCfgPath}),
+	}, nil
 }
 
 func createUser(ctx context.Context, db *sql.DB, userDSN dsn.DSN, flags Flags) (dsn.DSN, error) {

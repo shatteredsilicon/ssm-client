@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/shatteredsilicon/ssm-client/ssm/plugin"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/mgo.v2"
 )
 
@@ -59,4 +61,25 @@ func Init(ctx context.Context, uri string, args []string, baseDir string) (*plug
 		DSN:     uri,
 	}
 	return info, nil
+}
+
+func Agents(toolAgentDir, dsn string) ([]plugin.Agent, error) {
+	opts := options.Client().ApplyURI(dsn)
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+
+	var args string
+	if opts.Auth != nil {
+		args = fmt.Sprintf("--username=%s --password --authenticationDatabase=%s", strconv.Quote(opts.Auth.Username), strconv.Quote(opts.Auth.AuthSource))
+	}
+	return []plugin.Agent{
+		plugin.NewToolAgent(toolAgentDir, []plugin.ToolAgentConfItem{
+			{
+				Name:       "pt-mongodb-summary",
+				Executable: fmt.Sprintf("pt-mongodb-summary %s", args),
+				Stdin:      []string{strconv.Quote(opts.Auth.Password)},
+			},
+		}, nil),
+	}, nil
 }

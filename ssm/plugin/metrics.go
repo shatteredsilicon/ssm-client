@@ -28,4 +28,6 @@ type Metrics interface {
 	Port() int
 	// CustomOptions returns key-value map of custom options that are applied
 	CustomOptions() (map[string]string, error)
+	// Agents returns agents that are associated to the exporter
+	Agents() ([]Agent, error)
 }

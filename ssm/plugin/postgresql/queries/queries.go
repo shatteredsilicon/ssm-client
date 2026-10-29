@@ -80,3 +80,8 @@ func (q Queries) Config() pc.QAN {
 		PrefetchMetadata: &q.queriesFlags.PrefetchMetadata,
 	}
 }
+
+// Agents returns agents that are associated to the plugin
+func (q Queries) Agents() ([]plugin.Agent, error) {
+	return nil, nil
+}

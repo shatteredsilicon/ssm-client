@@ -3,12 +3,12 @@ Section: utils
 Priority: optional
 Maintainer: Shattered Silicon
 Standards-Version: 4.6.2.0
-Build-Depends: debhelper (>= 9), golang-1.25, adduser
+Build-Depends: debhelper (>= 9), golang-1.26, adduser
 Homepage: https://shatteredsilicon.net
 
 Package: ssm-client
 Architecture: amd64 arm64
-Pre-Depends: percona-toolkit
+Pre-Depends: percona-toolkit, silicon-toolkit (>= 1.7)
 Description: Shattered Silicon Monitoring Client
  Shattered Silicon Monitoring (SSM) is an open-source platform for managing and monitoring MySQL and MongoDB
  performance. It is a fork of Percona Monitoring and Management (PMM), which is developed by Percona in collaboration

@@ -1,7 +1,10 @@
 #!/bin/bash
 
 if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss" ]; then
-    chown -R ssm:ssm /opt/ss
+    find /opt/ss -path /opt/ss/tool-agent -prune -o -exec chown ssm:ssm {} +
+fi
+if getent passwd ssm > /dev/null 2>&1 && [ -d "/opt/ss/tool-agent" ]; then
+    chown -R root:ssm /opt/ss/tool-agent
 fi
 
 # check init system
@@ -41,14 +44,12 @@ if [ "$1" == "configure" ] && [ -z "$2" ]; then
     for file in /opt/ss/ssm-client/config/*; do
         mv "${file}" /opt/ss/ssm-client/
     done
-    [ -z "$(ls -A /opt/ss/ssm-client/config)" ] || rm -rf /opt/ss/ssm-client/config
+    for file in /opt/ss/tool-agent/config/*; do
+        mv "${file}" /opt/ss/tool-agent/
+    done
 
 # upgrade
 elif [ "$1" == "configure" ]; then
-    if [ -d /opt/ss/percona/qan-agent ] && [ ! -f /opt/ss/qan-agent/config/agent.conf ]; then
-        find /opt/ss/percona/qan-agent -maxdepth 1 ! -path /opt/ss/percona/qan-agent ! -name bin -exec cp -r "{}" /opt/ss/qan-agent/ \;
-    fi
-
     # from 9.x going forward, we leave the new config files as .new files
     if ! [ -f /opt/ss/ssm-client/.old-version ] || [[ "$(cat /opt/ss/ssm-client/.old-version)" =~ ^[vV]?[0-8][.] ]]; then
         :
@@ -62,9 +63,20 @@ elif [ "$1" == "configure" ]; then
                 mv "${file}" /opt/ss/ssm-client/${file#/opt/ss/ssm-client/config/}.new
             fi
         done
+
+        for file in /opt/ss/tool-agent/config/*; do
+            if ! [ -f /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/} ]; then
+                mv "${file}" /opt/ss/tool-agent/
+            elif diff -s "$file" /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/} >/dev/null; then
+                :
+            else
+                mv "${file}" /opt/ss/tool-agent/${file#/opt/ss/tool-agent/config/}.new
+            fi
+        done
     fi
 
     ssm-admin upgrade
 fi
 
-rm -rf /opt/ss/percona
+rm -rf /opt/ss/ssm-client/config
+rm -rf /opt/ss/tool-agent/config

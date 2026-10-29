@@ -9,4 +9,5 @@ type Info struct {
 	DSN             string
 	QuerySource     string
 	SSMUserPassword string
+	Agents          []string
 }

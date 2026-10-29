@@ -109,3 +109,8 @@ func (Metrics) Cluster() string {
 func (m Metrics) CustomOptions() (map[string]string, error) {
 	return nil, nil
 }
+
+// Agents returns agents that are associated to the exporter
+func (m Metrics) Agents() ([]plugin.Agent, error) {
+	return nil, nil
+}

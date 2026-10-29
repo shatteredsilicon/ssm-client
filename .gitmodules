@@ -19,3 +19,6 @@
 [submodule "submodules/mt-agent"]
 	path = submodules/mt-agent
 	url = https://github.com/shatteredsilicon/mt-agent
+[submodule "submodules/tool-agent"]
+	path = submodules/tool-agent
+	url = https://github.com/shatteredsilicon/tool-agent

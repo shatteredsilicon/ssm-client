@@ -56,13 +56,31 @@ func (a *Admin) AddQueries(ctx context.Context, q plugin.Queries, prevInfo *plug
 
 	serviceType := fmt.Sprintf("%s:queries", q.Name())
 
+	addAgentFunc := func() error {
+		if agents, err := q.Agents(); err != nil {
+			return err
+		} else if len(agents) > 0 {
+			for _, agent := range agents {
+				if err := a.AddAgent(ctx, agent); err != nil {
+					return err
+				}
+				info.Agents = append(info.Agents, fmt.Sprintf("%s:agent", agent.Name()))
+			}
+		}
+
+		return nil
+	}
+
 	// Check if we have already this service on Consul.
 	consulSvc, err := a.getConsulService(serviceType, a.ServiceName)
 	if err != nil {
 		return nil, err
 	}
 	if consulSvc != nil {
-		return nil, ErrDuplicate
+		if err = addAgentFunc(); err != nil {
+			return nil, err
+		}
+		return info, ErrDuplicate
 	}
 
 	if err := a.checkGlobalDuplicateService(serviceType, a.ServiceName); err != nil {
@@ -222,6 +240,10 @@ func (a *Admin) AddQueries(ctx context.Context, q plugin.Queries, prevInfo *plug
 	}
 	_, err = a.consulAPI.KV().Put(d, nil)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := addAgentFunc(); err != nil {
 		return nil, err
 	}
 

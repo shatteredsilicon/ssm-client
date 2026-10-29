@@ -770,10 +770,6 @@ type localService struct {
 	filePath    string
 }
 
-func (svc localService) isQueries() bool {
-	return strings.HasSuffix(svc.serviceType, ":queries")
-}
-
 func serviceTypeInName(serviceType string) string {
 	return strings.Replace(serviceType, ":", "-", 1)
 }
@@ -977,6 +973,7 @@ var svcTypes = []string{
 	plugin.PostgreSQLMetrics,
 	plugin.PostgreSQLQueries,
 	plugin.ProxySQLMetrics,
+	plugin.ToolAgent,
 }
 
 // isValidSvcType checks if given service type is allowed

@@ -41,23 +41,25 @@ var disableCollectArgs = map[string]map[string]string{
 }
 
 // New returns *Metrics.
-func New(flags Flags, mysqlFlags mysql.Flags, ssmBaseDir string) *Metrics {
+func New(flags Flags, mysqlFlags mysql.Flags, ssmBaseDir, toolAgentDir string) *Metrics {
 	return &Metrics{
-		flags:      flags,
-		mysqlFlags: mysqlFlags,
-		ssmBaseDir: ssmBaseDir,
-		cfgPath:    path.Join(ssmBaseDir, "mysqld_exporter.conf"),
+		flags:        flags,
+		mysqlFlags:   mysqlFlags,
+		ssmBaseDir:   ssmBaseDir,
+		toolAgentDir: toolAgentDir,
+		cfgPath:      path.Join(ssmBaseDir, "mysqld_exporter.conf"),
 	}
 }
 
 // Metrics implements plugin.Metrics.
 type Metrics struct {
-	flags      Flags
-	mysqlFlags mysql.Flags
-	ssmBaseDir string
-	port       int
-	dsn        string
-	cfgPath    string
+	flags        Flags
+	mysqlFlags   mysql.Flags
+	ssmBaseDir   string
+	toolAgentDir string
+	port         int
+	dsn          string
+	cfgPath      string
 }
 
 // Init initializes plugin.
@@ -183,6 +185,11 @@ func (m Metrics) CustomOptions() (map[string]string, error) {
 // Cluster defines cluster name for the target.
 func (m Metrics) Cluster() string {
 	return ""
+}
+
+// Agents returns agents that are associated to the exporter
+func (m Metrics) Agents() ([]plugin.Agent, error) {
+	return mysql.Agents(m.toolAgentDir, m.dsn, m.mysqlFlags.SSL)
 }
 
 func optsToDisable(ctx context.Context, dsn string, flags Flags) ([]string, error) {

@@ -67,43 +67,6 @@ func (p *program) Stop(s service.Service) error {
 	return nil
 }
 
-func (p *program) run() error {
-	return nil
-}
-
-func installService(svcConfig *service.Config) error {
-	prg := &program{}
-	svc, err := NewService(prg, svcConfig)
-	if err != nil {
-		return err
-	}
-	if err := svc.Install(); err != nil {
-		return err
-	}
-	if err := svc.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func uninstallService(name string) error {
-	prg := &program{}
-	svcConfig := &service.Config{Name: name}
-	svc, err := NewService(prg, svcConfig)
-	if err != nil {
-		return err
-	}
-	if err := svc.Status(); err == nil {
-		if err := svc.Stop(); err != nil {
-			return err
-		}
-	}
-	if err := svc.Uninstall(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func startService(name string) error {
 	prg := &program{}
 	svcConfig := &service.Config{Name: name}
@@ -200,8 +163,6 @@ const (
 	upstartExtension = ".conf"
 	systemvExtension = ""
 	launchdExtension = ".plist"
-
-	upgradeServiceSuffix = "-upgrade"
 )
 
 func serviceName(serviceType string) string {
@@ -210,12 +171,4 @@ func serviceName(serviceType string) string {
 	}
 
 	return fmt.Sprintf("ssm-%s", serviceTypeInName(serviceType))
-}
-
-func upgradeServiceName(serviceType string) string {
-	if name := serviceName(serviceType); name != "" {
-		return fmt.Sprintf("%s%s", name, upgradeServiceSuffix)
-	}
-
-	return ""
 }
